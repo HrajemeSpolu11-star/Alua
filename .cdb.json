@@ -3,10 +3,11 @@
   "type": "MOD",
   "title": "Alua",
   "name": "alua",
-  "short_description": "Vývojový základ pro AI agenta a vlastní herní mechaniky v Luanti.",
+  "short_description": "Autonomous companion with follow, memory, recall and sensor commands.",
   "dev_state": "WIP",
   "ai_disclosure": "ASSISTED",
   "license": "MIT",
+  "media_license": "MIT",
   "repo": "https://github.com/HrajemeSpolu11-star/Alua",
   "issue_tracker": "https://github.com/HrajemeSpolu11-star/Alua/issues"
 }
