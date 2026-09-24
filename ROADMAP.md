@@ -120,7 +120,19 @@ Stav: **plán po schválení/instalaci**
 - [ ] bezpečnostní limity adaptace
 - [ ] reset naučených dat
 
-## Fáze 10 – Stabilita
+## Fáze 10 – Licence a provenance
+
+- [x] zdokumentovat současnou MIT licenci Alua
+- [x] zavést evidenci třetích stran
+- [x] zavést evidenci zdrojů a AI asistence
+- [x] označit Mineclonii jako testovací prostředí, ne zdroj vlastního obsahu
+- [ ] před každým externím assetem provést licenční kontrolu
+- [ ] před přijetím větších externích příspěvků rozhodnout contribution/licensing model
+- [ ] před samostatnou hrou vytvořit kompletní licenční matici
+- [ ] před komerčním vydáním provést finální licenční audit
+- [ ] rozhodnout dlouhodobou licenci nových verzí Alua
+
+## Fáze 11 – Stabilita
 
 Průběžně:
 - [ ] výkonové limity

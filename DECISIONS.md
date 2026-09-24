@@ -69,3 +69,28 @@ NPC může existovat v populační simulaci bez spuštěné plné AI. Detailní 
 **Datum:** 2026-09-24
 
 Kampaň a questy mohou vytvářet situace a události, ale nemají přímo přepisovat soukromou paměť nebo rozhodnutí agenta.
+
+
+## ADR-011 – Mineclonia je testovací prostředí, ne zdroj našeho obsahu
+**Stav:** přijato  
+**Datum:** 2026-09-24
+
+Mineclonia se používá pro vývoj a testování Alua. Dlouhodobá architektura má umožnit přenést naše systémy do vlastní hry.
+
+Kód, textury, modely a zvuky Mineclonie se nekopírují do Alua bez samostatného licenčního posouzení.
+
+## ADR-012 – Evidence třetích stran je povinná
+**Stav:** přijato  
+**Datum:** 2026-09-24
+
+Každý významný externí kód nebo asset musí mít evidovaný původ, autora a licenci v `THIRD_PARTY_LICENSES.md`.
+
+## ADR-013 – Současná licence Alua zůstává MIT do dalšího výslovného rozhodnutí
+**Stav:** přijato  
+**Datum:** 2026-09-24
+
+Aktuální repozitář zůstává pod MIT, aby nebylo během probíhajícího ContentDB procesu svévolně měněno licenční nastavení.
+
+Dlouhodobý model bude znovu vyhodnocen před samostatnou hrou, významným komerčním vydáním nebo před přijetím většího množství externích příspěvků.
+
+Již vydané verze pod MIT zůstávají použitelné podle podmínek, pod kterými byly vydány.

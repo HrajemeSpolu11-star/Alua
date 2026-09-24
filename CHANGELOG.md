@@ -12,6 +12,13 @@
 - přidán diagnostický příkaz `/alua_modules`
 - současné `npc.lua` a `commands.lua` ponechány jako kompatibilní vrstva
 
+### Licence a provenance
+- zdokumentována současná MIT licence a pravidla případné budoucí změny
+- Mineclonia výslovně označena jako testovací prostředí
+- přidána evidence třetích stran a externích zdrojů
+- přidána evidence AI asistence
+- licenční kontrola přidána do povinného checklistu změn
+
 ### Dokumentace
 - popsány hranice jednotlivých modulů
 - popsáno rozhraní mezi světem a AI

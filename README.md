@@ -44,6 +44,10 @@ World zná skutečný stav simulace. AI ho nezná přímo a komunikuje se světe
 - [WORLD_SCOPE.md](WORLD_SCOPE.md) – rozsah úprav světa
 - [MATERIAL_SYSTEM.md](MATERIAL_SYSTEM.md) – materiály a fyzikální vlastnosti
 - [CHANGE_POLICY.md](CHANGE_POLICY.md) – pravidla změn
+- [LICENSING.md](LICENSING.md) – licenční strategie a dlouhodobá ochrana projektu
+- [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) – evidence cizího kódu a médií
+- [SOURCES.md](SOURCES.md) – zdroje a provenance
+- [AI_ASSISTANCE.md](AI_ASSISTANCE.md) – evidence AI asistence
 - [DECISIONS.md](DECISIONS.md) – architektonická rozhodnutí
 - [CHANGELOG.md](CHANGELOG.md) – přehled změn
 - [docs/MODULES.md](docs/MODULES.md) – hranice domén
@@ -57,4 +61,6 @@ Interní dokumentace je česky. Kódové názvy a technická API mohou být angl
 
 ## Licence
 
-MIT
+Aktuální kód Alua je pod licencí **MIT**. Dlouhodobá licenční strategie a pravidla pro cizí závislosti jsou v [LICENSING.md](LICENSING.md).
+
+Mineclonia slouží jako testovací prostředí; její kód a assety nejsou automaticky součástí Alua.
