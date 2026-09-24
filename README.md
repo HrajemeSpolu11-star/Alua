@@ -2,7 +2,13 @@
 
 Alua is an experimental autonomous companion framework for Luanti, currently tested with **Mineclonia**.
 
-The current release is already playable: every player can spawn one persistent Alua companion, switch its behaviour, recall it, inspect its simple memory and request a basic sensor report. The long-term goal is to connect the in-game agent to a more capable external AI brain while keeping the Luanti-side actions explicit and controllable.
+The current release is playable: every player can spawn one persistent Alua companion, switch its behaviour, recall it, inspect its simple memory and request a basic sensor report.
+
+## Core vision
+
+Alua itself is the AI. The project does **not** depend on an external LLM or external AI service for its core intelligence. Intelligence will be built inside the mod from modular perception, memory, needs, goals, planning, actions and learning systems.
+
+Mineclonia remains the base world. The project does not aim to replace the map generator. World work focuses on selected rules and systems such as physics, items, interactions, environment behaviour and related gameplay mechanics.
 
 ## Current features
 
@@ -15,7 +21,6 @@ The current release is already playable: every player can spawn one persistent A
 - Local sensor report
 - Status reporting
 - One active companion per player
-- Code-only visual using Luanti texture modifiers, so no external media pack is required
 
 ## Commands
 
@@ -31,26 +36,21 @@ The current release is already playable: every player can spawn one persistent A
 /alua_help
 ```
 
-### Quick test
+## Documentation
 
-1. Enable the mod for a Mineclonia world.
-2. Join the world.
-3. Run `/alua_spawn`.
-4. Walk away and the companion should follow you.
-5. Right-click the companion or run `/alua_stay` to make it wait.
-6. Run `/alua_follow` to resume following.
-7. Run `/alua_scan` or `/alua_status` to inspect its state.
+The repository documentation is part of the project contract:
 
-## Project direction
+- [VISION.md](VISION.md) - product vision and non-negotiable direction
+- [ROADMAP.md](ROADMAP.md) - implementation phases and acceptance criteria
+- [ARCHITECTURE.md](ARCHITECTURE.md) - modular architecture and boundaries
+- [WORLD_SCOPE.md](WORLD_SCOPE.md) - what may and may not change in Mineclonia
+- [CHANGE_POLICY.md](CHANGE_POLICY.md) - mandatory documentation rules for every change
+- [CHANGELOG.md](CHANGELOG.md) - chronological record of implemented changes
+- [DECISIONS.md](DECISIONS.md) - important architectural decisions
 
-This is the first functional layer of Alua. Planned later stages include richer perception, path planning, inventories, goals, task execution and an optional external AI bridge.
+## Development rule
 
-## Files
-
-- `init.lua` - entry point
-- `npc.lua` - companion entity and behaviour
-- `commands.lua` - player commands
-- `mod.conf` - Luanti metadata
+No meaningful code or gameplay change is considered complete until the related documentation is updated. Changes that alter scope, architecture or planned work must update the relevant documents and roadmap in the same change set.
 
 ## License
 
