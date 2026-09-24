@@ -8,6 +8,10 @@ Mineclonia zůstává základní hrou a generátorem mapy. V tuto chvíli nechce
 
 Přes samostatné moduly můžeme postupně upravovat:
 
+- obecný systém materiálů
+- hustotu, objem a odvozenou hmotnost
+- mechanické, tepelné a environmentální vlastnosti
+- skládání objektů z více materiálů
 - vlastnosti a metadata předmětů
 - hmotnost a zatížení
 - vybraná pravidla pohybu
@@ -42,3 +46,8 @@ Musí být zdokumentováno:
 ## Změny mapy
 
 Pokud někdy v budoucnu přidáme změnu, která zasahuje do vygenerovaného světa, dokumentace musí přesně uvést, zda působí jen na nové chunky, existující chunky, nebo vyžaduje migraci.
+
+
+## Materiálový systém
+
+Chování objektů má postupně vycházet ze společných vlastností materiálů místo stovek izolovaných výjimek. Podrobný návrh je v `MATERIAL_SYSTEM.md`.
