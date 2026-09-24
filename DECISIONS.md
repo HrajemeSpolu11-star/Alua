@@ -1,39 +1,45 @@
-# Architectural Decisions
+# Architektonická rozhodnutí
 
-This document records important decisions so future development does not accidentally reverse them.
+## ADR-001 – Alua sama je AI
 
-## ADR-001 - Alua is the AI
+**Stav:** přijato  
+**Datum:** 2026-09-24
 
-**Status:** Accepted  
-**Date:** 2026-09-24
+Základní inteligence vzniká uvnitř projektu Alua. Externí LLM nebo vzdálená AI služba nejsou nutné pro autonomní chování.
 
-Core intelligence is implemented inside the Alua project. An external LLM or remote AI API is not required for normal autonomous behaviour.
+## ADR-002 – Mineclonia zůstává základním světem
 
-Reason: the goal is to build an autonomous agent, not a game client for another AI service.
+**Stav:** přijato  
+**Datum:** 2026-09-24
 
-## ADR-002 - Mineclonia remains the base map/world
+Necháváme Mineclonii jako základ hry a generátoru mapy. Měnit budeme pouze vybraná pravidla přes samostatné moduly.
 
-**Status:** Accepted  
-**Date:** 2026-09-24
+## ADR-003 – Modulární architektura
 
-We keep Mineclonia as the base world and map generator. Development may change selected physics, items, interactions and environmental rules through modules.
+**Stav:** přijato  
+**Datum:** 2026-09-24
 
-Reason: the project focuses on Alua intelligence and selected world rules, not rebuilding terrain generation.
+Nové schopnosti jsou samostatné moduly s jasnými hranicemi. Jádro poskytuje registraci, event bus a perzistentní stav.
 
-## ADR-003 - Modular architecture over monolithic scripts
+## ADR-004 – Dokumentace je součást změny
 
-**Status:** Accepted  
-**Date:** 2026-09-24
+**Stav:** přijato  
+**Datum:** 2026-09-24
 
-New capabilities are split into modules with documented boundaries. Core services provide registration, events and persistent-state facilities.
+Přijaté změny vize, roadmapy a významného chování se zapisují do repozitáře. Chat není autoritativní dokumentace.
 
-Reason: perception, memory, planning, actions and world rules will grow independently and must remain replaceable.
+## ADR-005 – AI nesmí znát úplnou pravdu enginu
 
-## ADR-004 - Documentation is part of every change
+**Stav:** přijato  
+**Datum:** 2026-09-24
 
-**Status:** Accepted  
-**Date:** 2026-09-24
+Kognitivní část Alua nesmí mít přímý neomezený přístup ke kompletnímu stavu Luanti/Mineclonie. Informace procházejí přes world adapter a omezenou vjemovou vrstvu.
 
-Accepted vision, roadmap changes and meaningful implementation changes must be written to repository documents. Chat history is not the authoritative project record.
+Důvod: cílem je agent, který svět poznává a učí se, ne skript s vševědoucím API.
 
-Reason: the project is intended to evolve over a long period without losing prior decisions or repeatedly rediscovering architecture.
+## ADR-006 – Interní dokumentace je v češtině
+
+**Stav:** přijato  
+**Datum:** 2026-09-24
+
+Veškerá interní projektová dokumentace se vede česky. Angličtina zůstává vhodná pro kódová API, technické identifikátory a veřejná mezinárodní metadata.

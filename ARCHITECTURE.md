@@ -1,10 +1,10 @@
-# Alua Architecture
+# Architektura Alua
 
-## Objective
+## Cíl
 
-Alua must remain extensible as the project grows. A new sensor, memory type, decision strategy, action, item rule or physics rule should be addable without rewriting the rest of the project.
+Projekt musí zůstat rozšiřitelný. Nový senzor, typ paměti, rozhodovací strategie, akce, pravidlo předmětu nebo fyzikální modul musí jít přidat bez přepisování zbytku systému.
 
-## Target structure
+## Cílová struktura
 
 ```
 Alua/
@@ -13,39 +13,37 @@ Alua/
 │   ├── module_registry.lua
 │   ├── events.lua
 │   ├── state.lua
-│   ├── config.lua              # planned
-│   └── scheduler.lua           # planned
+│   ├── config.lua
+│   └── scheduler.lua
 ├── agent/
-│   ├── entity.lua              # planned migration from npc.lua
-│   ├── controller.lua          # planned
+│   ├── entity.lua
+│   ├── controller.lua
 │   ├── perception/
 │   ├── memory/
+│   ├── world_model/
 │   ├── needs/
 │   ├── goals/
 │   ├── planning/
 │   ├── actions/
 │   └── learning/
 ├── world/
+│   ├── adapter/
 │   ├── physics/
 │   ├── items/
 │   ├── environment/
 │   └── compatibility/
 ├── ui/
-│   ├── commands.lua
-│   └── debug.lua
 ├── docs/
 └── tests/
 ```
 
-The current `npc.lua` and `commands.lua` remain in place while functionality is migrated incrementally. We do not perform a risky big-bang rewrite.
+Současné `npc.lua` a `commands.lua` zatím zůstávají kvůli stabilitě. Budou se převádět postupně, ne jedním rizikovým přepisem.
 
-## Core contracts
+## Registr modulů
 
-### Module registry
+Každý subsystém má unikátní ID a registruje se přes společné jádro.
 
-Subsystems register themselves by a unique ID. Initialization is ordered and failure-isolated. A module should expose only documented capabilities.
-
-Conceptual module definition:
+Příklad:
 
 ```lua
 {
@@ -55,61 +53,87 @@ Conceptual module definition:
 }
 ```
 
-### Event bus
+## Interní události
 
-Modules should prefer events for notifications that do not require direct ownership.
+Moduly mají pro oznamování změn používat event bus místo přímého sahání do soukromých struktur jiného modulu.
 
-Examples:
+Příklady:
 
 - `agent.spawned`
-- `agent.mode_changed`
 - `perception.updated`
+- `memory.updated`
+- `world_model.updated`
 - `goal.changed`
 - `action.started`
 - `action.finished`
 - `world.rule_changed`
 
-Event handlers must be failure-isolated so one module cannot crash unrelated handlers.
+Chyba jednoho handleru nesmí shodit ostatní.
 
-### Persistent state
+## Perzistentní stav
 
-Persistent state is versioned. New schemas must include migrations instead of assuming old saves match the newest structure.
+Uložená data jsou verzovaná. Změna struktury musí mít migraci.
 
-Suggested namespaces:
+Předpokládané jmenné prostory:
 
 - `agent:<owner>`
 - `memory:<owner>`
+- `world_model:<owner>`
 - `world:<module>`
 - `meta:schema_version`
 
-## Dependency rule
+## Zásadní hranice mezi enginem a AI
 
-A high-level module may depend on a lower-level contract, but unrelated modules must not reach into each other's private tables.
+```
+Luanti / Mineclonia
+      │
+      ▼
+  world adapter
+      │
+      ▼
+omezené vnímání
+      │
+      ▼
+paměť + naučený model světa
+      │
+      ▼
+cíle / plánování / akce
+```
 
-Preferred direction:
+Kognitivní část AI nesmí volat libovolné API Luanti pro zjišťování skutečného stavu světa.
+
+Pouze adapter/perception vrstva smí číst technickou realitu enginu a musí ji převést na omezené vjemy.
+
+Diagnostické nástroje mohou vidět skutečná data, ale jejich výstup nesmí proudit do autonomního rozhodování.
+
+Podrobnosti jsou v `PERCEPTION_MODEL.md`.
+
+## Směr závislostí
 
 ```
 core
   ↑
+world adapter
+  ↑
 perception / memory / actions
+  ↑
+world model / learning
   ↑
 goals / planner
   ↑
 controller
 ```
 
-World-rule modules depend on `core` and Mineclonia compatibility adapters, not directly on AI decision internals.
+World moduly jsou oddělené od vnitřního rozhodování AI.
 
-## World modifications
+## Pravidla stability
 
-Every world modification must be isolated behind its own module and feature flag. Disabling one world module should restore default Mineclonia behaviour as closely as technically possible.
-
-## Stability rules
-
-- No new global namespace except `alua`.
-- Public functions require documentation.
-- Persistent data requires schema/version consideration.
-- Module initialization errors are logged and isolated.
-- Cross-module communication must use a documented API/event.
-- Large refactors are incremental.
-- Behaviour changes require CHANGELOG and ROADMAP updates.
+- jediný globální namespace je `alua`
+- veřejné funkce musí být dokumentované
+- perzistentní data musí řešit verzi schématu
+- chyby inicializace modulu se logují a izolují
+- moduly komunikují přes dokumentované API nebo události
+- cognition nesmí obcházet perception boundary
+- diagnostická vševědoucnost nesmí ovlivňovat AI
+- velké refaktory se dělají postupně
+- změny chování vyžadují aktualizaci dokumentace

@@ -1,28 +1,28 @@
 # Alua
 
-Alua is an experimental autonomous companion framework for Luanti, currently tested with **Mineclonia**.
+Alua je experimentální autonomní inteligence pro Luanti, aktuálně testovaná s hrou **Mineclonia**.
 
-The current release is playable: every player can spawn one persistent Alua companion, switch its behaviour, recall it, inspect its simple memory and request a basic sensor report.
+Současná verze je už hratelná: hráč může vyvolat jednoho trvalého společníka Alua, přepínat jeho chování, přivolat ho, zobrazit jednoduchou paměť a spustit diagnostický scan.
 
-## Core vision
+## Hlavní vize
 
-Alua itself is the AI. The project does **not** depend on an external LLM or external AI service for its core intelligence. Intelligence will be built inside the mod from modular perception, memory, needs, goals, planning, actions and learning systems.
+Alua sama je AI. Projekt nemá být jen obal kolem externího LLM nebo vzdálené AI služby. Inteligence se bude postupně skládat z vlastních modulů pro vnímání, paměť, potřeby, cíle, plánování, akce a učení.
 
-Mineclonia remains the base world. The project does not aim to replace the map generator. World work focuses on selected rules and systems such as physics, items, interactions, environment behaviour and related gameplay mechanics.
+Mineclonia zůstává základním světem. Nechceme předělávat generátor mapy, ale budeme postupně upravovat vybraná pravidla světa: fyziku, předměty, interakce, prostředí a další mechaniky.
 
-## Current features
+## Aktuální funkce
 
-- Persistent companion entity with owner binding
-- Autonomous follow behaviour
-- Stay / follow mode switching
-- Right-click interaction
-- Recall command
-- Simple persistent memory of the owner's last seen position
-- Local sensor report
-- Status reporting
-- One active companion per player
+- trvalá entita společníka navázaná na vlastníka
+- následování hráče
+- režim následovat / čekat
+- interakce pravým kliknutím
+- přivolání
+- jednoduchá perzistentní paměť poslední známé pozice vlastníka
+- diagnostický scan okolí
+- stavový výpis
+- jeden aktivní společník na hráče
 
-## Commands
+## Příkazy
 
 ```
 /alua_test
@@ -36,22 +36,25 @@ Mineclonia remains the base world. The project does not aim to replace the map g
 /alua_help
 ```
 
-## Documentation
+## Dokumentace
 
-The repository documentation is part of the project contract:
+- [VISION.md](VISION.md) – dlouhodobá vize a nepřekročitelná pravidla
+- [ROADMAP.md](ROADMAP.md) – fáze vývoje a podmínky dokončení
+- [ARCHITECTURE.md](ARCHITECTURE.md) – modulární architektura a hranice systémů
+- [PERCEPTION_MODEL.md](PERCEPTION_MODEL.md) – pravidla vnímání, neznalosti a učení
+- [WORLD_SCOPE.md](WORLD_SCOPE.md) – co ve světě měníme a co ne
+- [CHANGE_POLICY.md](CHANGE_POLICY.md) – povinná pravidla pro změny a dokumentaci
+- [CHANGELOG.md](CHANGELOG.md) – historie skutečně provedených změn
+- [DECISIONS.md](DECISIONS.md) – důležitá architektonická rozhodnutí
 
-- [VISION.md](VISION.md) - product vision and non-negotiable direction
-- [ROADMAP.md](ROADMAP.md) - implementation phases and acceptance criteria
-- [ARCHITECTURE.md](ARCHITECTURE.md) - modular architecture and boundaries
-- [WORLD_SCOPE.md](WORLD_SCOPE.md) - what may and may not change in Mineclonia
-- [CHANGE_POLICY.md](CHANGE_POLICY.md) - mandatory documentation rules for every change
-- [CHANGELOG.md](CHANGELOG.md) - chronological record of implemented changes
-- [DECISIONS.md](DECISIONS.md) - important architectural decisions
+## Jazyk dokumentace
 
-## Development rule
+Interní dokumentace projektu je vedena **česky**. Kódové názvy modulů, funkcí a rozhraní mohou být anglicky.
 
-No meaningful code or gameplay change is considered complete until the related documentation is updated. Changes that alter scope, architecture or planned work must update the relevant documents and roadmap in the same change set.
+## Povinné pravidlo vývoje
 
-## License
+Významná změna kódu nebo herního chování není považována za dokončenou, dokud nejsou ve stejné změně aktualizované příslušné dokumenty.
+
+## Licence
 
 MIT

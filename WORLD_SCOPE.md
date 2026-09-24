@@ -1,44 +1,44 @@
-# World Scope
+# Rozsah úprav světa
 
-## Base world
+## Základní svět
 
-Mineclonia remains the base game and map generator for Alua. We are not currently replacing terrain generation, biomes or the overall world map.
+Mineclonia zůstává základní hrou a generátorem mapy. V tuto chvíli nechceme nahrazovat terén, biomy ani celkovou strukturu mapy.
 
-## What we may change
+## Co můžeme měnit
 
-Selected systems around the world can evolve through independent modules:
+Přes samostatné moduly můžeme postupně upravovat:
 
-- item metadata and properties
-- weight/load effects
-- selected movement physics
-- falling and impact behaviour
-- water interaction
-- tool wear and repair
-- crafting extensions
-- object interaction rules
-- environmental conditions
-- selected mob/environment behaviour
-- new items or mechanics that fit the world
+- vlastnosti a metadata předmětů
+- hmotnost a zatížení
+- vybraná pravidla pohybu
+- pády a nárazy
+- interakci s vodou
+- opotřebení a opravy nástrojů
+- crafting rozšíření
+- pravidla používání objektů
+- environmentální podmínky
+- chování vybraných živých systémů
+- nové předměty a mechaniky
 
-## What we avoid by default
+## Co nechceme dělat bez výslovného rozhodnutí
 
-- replacing the complete Mineclonia map generator
-- globally changing unrelated physics from one module
-- directly editing many Mineclonia internals when an adapter/hook is possible
-- irreversible save changes without migration
-- requiring all world modules to be enabled together
+- nahrazovat kompletní mapgen Mineclonie
+- měnit jedním modulem mnoho nesouvisejících pravidel
+- přepisovat interní kód Mineclonie tam, kde lze použít adaptér nebo hook
+- dělat nevratné změny save bez migrace
+- vázat všechny world moduly na sebe
 
-## Compatibility rule
+## Povinnosti každého world modulu
 
-World changes should be implemented as feature-isolated modules. Each module should declare:
+Musí být zdokumentováno:
 
-- what default behaviour it changes
-- whether the change is reversible
-- persisted data it writes
-- Mineclonia APIs/nodes/items it depends on
-- known conflicts
-- how to disable it
+- co přesně mění
+- jestli je změna vratná
+- jaká data ukládá
+- na čem z Mineclonie závisí
+- známé konflikty
+- jak modul vypnout
 
-## Map migration rule
+## Změny mapy
 
-If a future change ever touches generated map content, the documentation must state whether it affects only new chunks, existing chunks, or requires a migration. No map-altering feature may be introduced silently.
+Pokud někdy v budoucnu přidáme změnu, která zasahuje do vygenerovaného světa, dokumentace musí přesně uvést, zda působí jen na nové chunky, existující chunky, nebo vyžaduje migraci.

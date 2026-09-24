@@ -1,34 +1,36 @@
-# Changelog
+# Přehled změn
 
-All notable project changes are recorded here.
+## Nezveřejněno
 
-## Unreleased
+### Architektura
+- přidáno modulární jádro: registr modulů, event bus a verzovaný persistentní stav
+- definována hranice mezi technickou pravdou enginu a vnímáním AI
+- stanoveno pravidlo, že Alua nesmí používat vševědoucí data enginu pro autonomní rozhodování
+- doplněn model vnímání, neznalosti a učení
 
-### Architecture
-- Added modular core foundations: module registry, event bus and versioned state storage.
-- Defined architecture, world scope, roadmap, project vision and mandatory change policy.
+### Dokumentace
+- interní dokumentace převedena do češtiny
+- zavedeno pravidlo, že další interní dokumentace musí být česky
+- vytvořena vize, roadmapa, architektura, rozsah světa, pravidla změn a architektonická rozhodnutí
 
-### Governance
-- Established the rule that meaningful code/gameplay changes must update the relevant documentation in the same change set.
+## 0.2.0 – 2026-09-24
 
-## 0.2.0 - 2026-09-24
+### Přidáno
+- trvalý společník navázaný na vlastníka
+- follow a stay
+- recall
+- přepnutí pravým kliknutím
+- jednoduchá paměť pozice vlastníka
+- stavový a diagnostický scan příkaz
+- odstranění společníka a nápověda
 
-### Added
-- Persistent owner-bound Alua companion.
-- Follow and stay behaviours.
-- Recall command.
-- Right-click mode switching.
-- Basic memory of owner position.
-- Status and local sensor commands.
-- Companion removal and help commands.
+### Změněno
+- ContentDB popis rozšířen z jednoduchého stubu na funkční companion
+- Mineclonia nastavena jako podporovaná hra
 
-### Changed
-- ContentDB description updated from a stub to functional companion functionality.
-- Mineclonia declared as the supported game.
+## 0.1.0 – 2026-09-24
 
-## 0.1.0 - 2026-09-24
-
-### Added
-- Initial Luanti mod skeleton.
-- Diagnostic `/alua_test` command.
-- ContentDB metadata and MIT license.
+### Přidáno
+- první kostra Luanti modu
+- diagnostický příkaz `/alua_test`
+- ContentDB metadata a MIT licence

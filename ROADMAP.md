@@ -1,118 +1,110 @@
-# Alua Roadmap
+# Roadmapa Alua
 
-This roadmap is the canonical plan for the project. Status must be updated whenever implementation priorities change.
+Tento soubor je hlavní plán projektu.
 
-## Phase 0 - Functional companion foundation
+## Fáze 0 – Funkční základ společníka
 
-Status: **Implemented / stabilizing**
+Stav: **implementováno / stabilizace**
 
-- [x] Spawnable persistent companion
-- [x] Owner binding
-- [x] Follow mode
-- [x] Stay mode
-- [x] Recall
-- [x] Basic status reporting
-- [x] Basic local sensor report
-- [x] Simple persistent memory
-- [ ] Device testing in Luanti + Mineclonia
-- [ ] ContentDB approval
+- [x] spawn společníka
+- [x] vlastník
+- [x] follow
+- [x] stay
+- [x] recall
+- [x] základní stavový výpis
+- [x] diagnostický scan
+- [x] jednoduchá perzistentní paměť
+- [ ] test přímo v Luanti + Mineclonia na telefonu
+- [ ] schválení ContentDB
 
-Acceptance: the current companion can be installed, spawned, controlled and saved without errors.
+Poznámka: `/alua_scan` je pouze diagnostika, ne finální smysl AI.
 
-## Phase 1 - Modular core
+## Fáze 1 – Modulární jádro
 
-Status: **In progress**
+Stav: **probíhá**
 
-- [x] Define project architecture
-- [x] Add module registry foundation
-- [x] Add internal event bus foundation
-- [x] Add versioned persistent-state foundation
-- [ ] Move existing companion behaviour behind module boundaries
-- [ ] Add configuration/feature flags
-- [ ] Add diagnostics for loaded modules
-- [ ] Add compatibility checks
+- [x] definovat architekturu
+- [x] registr modulů
+- [x] event bus
+- [x] verzovaný persistentní stav
+- [x] definovat hranici mezi enginem a vnímáním AI
+- [ ] převést současný NPC kód do modulů
+- [ ] konfigurace a feature flags
+- [ ] diagnostika načtených modulů
+- [ ] kontroly kompatibility
 
-Acceptance: adding a new subsystem does not require editing unrelated subsystems.
+## Fáze 2 – Vnímání, paměť a naučený model světa
 
-## Phase 2 - Perception and memory
+Stav: **plán**
 
-Status: **Planned**
+- [ ] world adapter oddělující engine truth
+- [ ] omezené smyslové snapshoty
+- [ ] dohled, dosah a zakrytí
+- [ ] reprezentace neznámých objektů
+- [ ] nejistota a confidence
+- [ ] pozorování následků vlastních akcí
+- [ ] pracovní paměť
+- [ ] dlouhodobá epizodická paměť
+- [ ] naučené vztahy mezi objekty a materiály
+- [ ] naučená místa a trasy
+- [ ] oddělit debug senzory od AI senzorů
+- [ ] limity a čištění paměti
+- [ ] migrace uloženého stavu
 
-- [ ] Structured perception snapshots
-- [ ] Nearby blocks/entities/items
-- [ ] Threat and obstacle detection
-- [ ] Short-term working memory
-- [ ] Long-term episodic memory
-- [ ] Known places/objects
-- [ ] Memory limits and cleanup
-- [ ] Save-schema migration tests
+Podmínka dokončení: Alua dokáže budovat vlastní omezený model okolí bez přímého přístupu ke kompletní sémantické pravdě enginu.
 
-Acceptance: Alua can build and update a bounded internal representation of relevant surroundings.
+## Fáze 3 – Potřeby, cíle a rozhodování
 
-## Phase 3 - Needs, goals and decisions
+- [ ] model potřeb
+- [ ] utility scoring
+- [ ] výběr cíle
+- [ ] arbitráž rozhodnutí
+- [ ] přerušení při nebezpečí
+- [ ] rozhodování podle vlastních přesvědčení, ne podle engine truth
+- [ ] vysvětlitelná stopa rozhodnutí
 
-Status: **Planned**
+## Fáze 4 – Plánování a dovednosti
 
-- [ ] Needs model
-- [ ] Utility scoring
-- [ ] Goal selection
-- [ ] Decision arbitration
-- [ ] Interrupts for danger/critical states
-- [ ] Explainable decision trace
+- [ ] registr schopností
+- [ ] vícekrokový plánovač
+- [ ] pohybové akce
+- [ ] práce s předměty
+- [ ] inventář
+- [ ] objevování a používání craftingu
+- [ ] získávání zdrojů
+- [ ] bezpečné selhání a přeplánování
 
-Acceptance: Alua chooses between competing goals without hard-coding one fixed response for every situation.
+## Fáze 5 – Modulární úpravy světa
 
-## Phase 4 - Planning and skills
+Generátor mapy zůstává beze změny.
 
-Status: **Planned**
+- [ ] vlastnosti předmětů
+- [ ] hmotnost a zatížení
+- [ ] vybraná pravidla pohybu a fyziky
+- [ ] pády a nárazy
+- [ ] voda a prostředí
+- [ ] opotřebení a opravy
+- [ ] environmentální stavy
+- [ ] kompatibilitní vrstva pro změny Mineclonie
 
-- [ ] Skill/capability registry
-- [ ] Multi-step planner
-- [ ] Movement/path actions
-- [ ] Item pickup/use
-- [ ] Inventory operations
-- [ ] Crafting actions
-- [ ] Resource gathering
-- [ ] Safe failure/replanning
+## Fáze 6 – Učení a adaptace
 
-Acceptance: Alua can compose several primitive actions into a meaningful task.
+- [ ] sledování výsledků akcí
+- [ ] učení vztahů objekt–akce–výsledek
+- [ ] učení užitečnosti materiálů a nástrojů
+- [ ] úprava preferencí
+- [ ] úprava utility podle zkušeností
+- [ ] revize chybných přesvědčení
+- [ ] bezpečnostní limity adaptace
+- [ ] možnost resetu naučených dat
 
-## Phase 5 - Selected world-rule modules
+## Fáze 7 – Stabilita a nástroje
 
-Status: **Planned**
+Průběžně:
 
-Map generation remains unchanged. Work focuses on opt-in gameplay systems:
-
-- [ ] Item properties and metadata
-- [ ] Weight/load effects
-- [ ] Selected movement/physics rules
-- [ ] Fall/impact behaviour
-- [ ] Water/environment interactions
-- [ ] Tool wear/repair extensions
-- [ ] Environmental state hooks
-- [ ] Compatibility layer for Mineclonia updates
-
-Acceptance: each world change can be enabled/disabled independently and does not silently modify unrelated systems.
-
-## Phase 6 - Learning and adaptation
-
-Status: **Research / planned**
-
-- [ ] Outcome tracking
-- [ ] Preference adjustment
-- [ ] Experience-based utility tuning
-- [ ] Safety limits on adaptation
-- [ ] Persistence and reset controls
-
-Acceptance: prior outcomes can influence future choices without allowing uncontrolled mutation of core rules.
-
-## Phase 7 - Stability and tooling
-
-Status: **Continuous**
-
-- [ ] Performance budgets
-- [ ] Save migration framework
-- [ ] Debug HUD/logging
-- [ ] Regression test scenarios
-- [ ] Mineclonia compatibility matrix
-- [ ] Release checklist
+- [ ] výkonové limity
+- [ ] migrační framework
+- [ ] debug HUD/logging
+- [ ] regresní scénáře
+- [ ] matice kompatibility Mineclonia
+- [ ] release checklist
