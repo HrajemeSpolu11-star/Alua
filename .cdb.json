@@ -9,5 +9,6 @@
   "license": "MIT",
   "media_license": "MIT",
   "repo": "https://github.com/HrajemeSpolu11-star/Alua",
-  "issue_tracker": "https://github.com/HrajemeSpolu11-star/Alua/issues"
+  "issue_tracker": "https://github.com/HrajemeSpolu11-star/Alua/issues",
+  "long_description": "Alua is an experimental autonomous companion framework for Luanti, currently tested with Mineclonia.\n\nCurrent playable features:\n- persistent owner-bound companion entity\n- autonomous follow behaviour\n- stay/follow switching by command or right-click\n- recall to the owner\n- simple persistent memory of the owner's last seen position\n- local sensor report and status command\n- one active companion per player\n\nCommands: /alua_spawn, /alua_follow, /alua_stay, /alua_recall, /alua_status, /alua_scan, /alua_remove, /alua_help.\n\nThe project is Work in Progress. Future stages will add richer perception, path planning, goals, inventories and an optional external AI bridge."
 }
