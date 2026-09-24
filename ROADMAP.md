@@ -78,7 +78,13 @@ Podmínka dokončení: Alua dokáže budovat vlastní omezený model okolí bez 
 
 Generátor mapy zůstává beze změny.
 
-- [ ] vlastnosti předmětů
+- [x] navrhnout obecný systém materiálových a fyzikálních vlastností
+- [ ] registr materiálů
+- [ ] skládání objektů z více materiálů
+- [ ] hustota, objem a odvozená hmotnost
+- [ ] mechanické, tepelné a environmentální vlastnosti
+- [ ] stav konkrétního kusu předmětu
+- [ ] obecné vztahy pro zpracování a kombinace materiálů
 - [ ] hmotnost a zatížení
 - [ ] vybraná pravidla pohybu a fyziky
 - [ ] pády a nárazy

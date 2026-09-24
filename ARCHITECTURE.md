@@ -28,6 +28,7 @@ Alua/
 │   └── learning/
 ├── world/
 │   ├── adapter/
+│   ├── materials/
 │   ├── physics/
 │   ├── items/
 │   ├── environment/
@@ -125,6 +126,24 @@ controller
 ```
 
 World moduly jsou oddělené od vnitřního rozhodování AI.
+
+## Materiálová vrstva
+
+Objekty mohou být složené z jednoho nebo více materiálů. Materiál nese fyzikální vlastnosti, objekt nese tvar, objem, funkci a aktuální stav.
+
+```
+objekt
+  ↓
+složení z materiálů
+  ↓
+materiálové vlastnosti
+  ↓
+fyzika / oheň / crafting / opotřebení / prostředí
+```
+
+Podrobný návrh je v `MATERIAL_SYSTEM.md`.
+
+Kognitivní Alua nesmí číst skutečné hodnoty materiálů přímo; poznává jejich projevy přes perception boundary.
 
 ## Pravidla stability
 

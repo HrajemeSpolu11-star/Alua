@@ -43,3 +43,13 @@ Důvod: cílem je agent, který svět poznává a učí se, ne skript s vševěd
 **Datum:** 2026-09-24
 
 Veškerá interní projektová dokumentace se vede česky. Angličtina zůstává vhodná pro kódová API, technické identifikátory a veřejná mezinárodní metadata.
+
+
+## ADR-007 – Vlastnosti objektů mají vycházet z materiálů
+
+**Stav:** návrh přijatý k budoucí implementaci  
+**Datum:** 2026-09-24
+
+Objekty a bloky mají postupně získat obecné materiálové vlastnosti, například hustotu, hmotnost, tvrdost, hořlavost, tepelnou vodivost, nasákavost nebo korozi.
+
+Alua tyto hodnoty nesmí automaticky znát. Učí se pouze jejich pozorovatelné projevy.

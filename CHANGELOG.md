@@ -8,6 +8,11 @@
 - stanoveno pravidlo, že Alua nesmí používat vševědoucí data enginu pro autonomní rozhodování
 - doplněn model vnímání, neznalosti a učení
 
+### Návrh světa
+- navržen obecný materiálový systém pro hustotu, hmotnost a další fyzikální vlastnosti
+- definováno skládání objektů z více materiálů a odvozování chování z jejich vlastností
+- potvrzeno, že Alua nesmí dostat materiálové hodnoty jako hotovou znalost
+
 ### Dokumentace
 - interní dokumentace převedena do češtiny
 - zavedeno pravidlo, že další interní dokumentace musí být česky

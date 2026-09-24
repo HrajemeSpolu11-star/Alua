@@ -43,6 +43,7 @@ Mineclonia zůstává základním světem. Nechceme předělávat generátor map
 - [ARCHITECTURE.md](ARCHITECTURE.md) – modulární architektura a hranice systémů
 - [PERCEPTION_MODEL.md](PERCEPTION_MODEL.md) – pravidla vnímání, neznalosti a učení
 - [WORLD_SCOPE.md](WORLD_SCOPE.md) – co ve světě měníme a co ne
+- [MATERIAL_SYSTEM.md](MATERIAL_SYSTEM.md) – návrh materiálů, fyzikálních vlastností a kombinací
 - [CHANGE_POLICY.md](CHANGE_POLICY.md) – povinná pravidla pro změny a dokumentaci
 - [CHANGELOG.md](CHANGELOG.md) – historie skutečně provedených změn
 - [DECISIONS.md](DECISIONS.md) – důležitá architektonická rozhodnutí
