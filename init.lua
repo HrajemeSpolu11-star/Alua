@@ -1,10 +1,13 @@
-local MODNAME = core.get_current_modname()
+alua = rawget(_G, "alua") or {}
+_G.alua = alua
 
-core.log("action", "[" .. MODNAME .. "] Mod Alua byl uspesne nacten.")
+alua.modname = core.get_current_modname()
+alua.modpath = core.get_modpath(alua.modname)
+alua.active = alua.active or {}
 
-core.register_chatcommand("alua_test", {
-    description = "Overi, ze mod Alua bezi",
-    func = function(name)
-        return true, "Alua funguje. Hrac: " .. name
-    end,
-})
+core.log("action", "[Alua] Loading autonomous companion framework")
+
+dofile(alua.modpath .. "/npc.lua")
+dofile(alua.modpath .. "/commands.lua")
+
+core.log("action", "[Alua] Loaded successfully")
