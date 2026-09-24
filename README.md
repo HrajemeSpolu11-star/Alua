@@ -1,60 +1,59 @@
 # Alua
 
-Alua je experimentální autonomní inteligence pro Luanti, aktuálně testovaná s hrou **Mineclonia**.
+Alua je projekt autonomních NPC a živého simulovaného světa pro Luanti/Mineclonia.
 
-Současná verze je už hratelná: hráč může vyvolat jednoho trvalého společníka Alua, přepínat jeho chování, přivolat ho, zobrazit jednoduchou paměť a spustit diagnostický scan.
+## Hlavní směr
 
-## Hlavní vize
+Projekt odděluje:
+- skutečná pravidla světa
+- individuální AI agentů
+- populaci
+- ekonomiku
+- společnost
+- příběh
+- vývojářskou diagnostiku
 
-Alua sama je AI. Projekt nemá být jen obal kolem externího LLM nebo vzdálené AI služby. Inteligence se bude postupně skládat z vlastních modulů pro vnímání, paměť, potřeby, cíle, plánování, akce a učení.
+Alua sama je AI; není to obal externího LLM.
 
-Mineclonia zůstává základním světem. Nechceme předělávat generátor mapy, ale budeme postupně upravovat vybraná pravidla světa: fyziku, předměty, interakce, prostředí a další mechaniky.
+## Současná stabilní funkce
 
-## Aktuální funkce
+Aktuální companion stále používá přechodné `npc.lua` a `commands.lua`. Nová modulární kostra je připravená odděleně a současné chování se bude migrovat po ověření na telefonu.
 
-- trvalá entita společníka navázaná na vlastníka
-- následování hráče
-- režim následovat / čekat
-- interakce pravým kliknutím
-- přivolání
-- jednoduchá perzistentní paměť poslední známé pozice vlastníka
-- diagnostický scan okolí
-- stavový výpis
-- jeden aktivní společník na hráče
-
-## Příkazy
+## Architektura
 
 ```
-/alua_test
-/alua_spawn
-/alua_follow
-/alua_stay
-/alua_recall
-/alua_status
-/alua_scan
-/alua_remove
-/alua_help
+core
+├── world
+│   └── adapter
+├── ai
+├── population
+├── economy
+├── society
+├── story
+└── debug
 ```
+
+World zná skutečný stav simulace. AI ho nezná přímo a komunikuje se světem přes omezené senzory a povolené akce.
 
 ## Dokumentace
 
-- [VISION.md](VISION.md) – dlouhodobá vize a nepřekročitelná pravidla
-- [ROADMAP.md](ROADMAP.md) – fáze vývoje a podmínky dokončení
-- [ARCHITECTURE.md](ARCHITECTURE.md) – modulární architektura a hranice systémů
-- [PERCEPTION_MODEL.md](PERCEPTION_MODEL.md) – pravidla vnímání, neznalosti a učení
-- [WORLD_SCOPE.md](WORLD_SCOPE.md) – co ve světě měníme a co ne
-- [MATERIAL_SYSTEM.md](MATERIAL_SYSTEM.md) – návrh materiálů, fyzikálních vlastností a kombinací
-- [CHANGE_POLICY.md](CHANGE_POLICY.md) – povinná pravidla pro změny a dokumentaci
-- [CHANGELOG.md](CHANGELOG.md) – historie skutečně provedených změn
-- [DECISIONS.md](DECISIONS.md) – důležitá architektonická rozhodnutí
+- [VISION.md](VISION.md) – dlouhodobá vize
+- [ROADMAP.md](ROADMAP.md) – plán vývoje
+- [ARCHITECTURE.md](ARCHITECTURE.md) – technická architektura
+- [PERCEPTION_MODEL.md](PERCEPTION_MODEL.md) – co smí AI vnímat a vědět
+- [WORLD_SCOPE.md](WORLD_SCOPE.md) – rozsah úprav světa
+- [MATERIAL_SYSTEM.md](MATERIAL_SYSTEM.md) – materiály a fyzikální vlastnosti
+- [CHANGE_POLICY.md](CHANGE_POLICY.md) – pravidla změn
+- [DECISIONS.md](DECISIONS.md) – architektonická rozhodnutí
+- [CHANGELOG.md](CHANGELOG.md) – přehled změn
+- [docs/MODULES.md](docs/MODULES.md) – hranice domén
+- [docs/INTERFACES.md](docs/INTERFACES.md) – world/AI rozhraní
+- [docs/SIMULATION_LEVELS.md](docs/SIMULATION_LEVELS.md) – výkonová simulace populace
+- [docs/TESTING_WORKFLOW.md](docs/TESTING_WORKFLOW.md) – testování dvou NPC
 
-## Jazyk dokumentace
+## Jazyk
 
-Interní dokumentace projektu je vedena **česky**. Kódové názvy modulů, funkcí a rozhraní mohou být anglicky.
-
-## Povinné pravidlo vývoje
-
-Významná změna kódu nebo herního chování není považována za dokončenou, dokud nejsou ve stejné změně aktualizované příslušné dokumenty.
+Interní dokumentace je česky. Kódové názvy a technická API mohou být anglicky.
 
 ## Licence
 

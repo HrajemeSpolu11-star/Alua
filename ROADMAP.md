@@ -19,98 +19,112 @@ Stav: **implementováno / stabilizace**
 
 Poznámka: `/alua_scan` je pouze diagnostika, ne finální smysl AI.
 
-## Fáze 1 – Modulární jádro
+## Fáze 1 – Modulární kostra
 
-Stav: **probíhá**
+Stav: **architektonická větev hotová, čeká na pozdější začlenění**
 
-- [x] definovat architekturu
-- [x] registr modulů
+- [x] registr modulů se závislostmi
 - [x] event bus
 - [x] verzovaný persistentní stav
-- [x] definovat hranici mezi enginem a vnímáním AI
-- [ ] převést současný NPC kód do modulů
-- [ ] konfigurace a feature flags
-- [ ] diagnostika načtených modulů
-- [ ] kontroly kompatibility
+- [x] konfigurace/feature flags
+- [x] scheduler
+- [x] oddělit world a AI
+- [x] založit world adapter
+- [x] založit domény population/economy/society/story/debug
+- [x] definovat úrovně simulace populace
+- [x] dokumentovat rozhraní a zakázané závislosti
+- [ ] převést současný `npc.lua` po ověření na telefonu
+- [ ] převést současné příkazy do nových rozhraní
+- [ ] přidat kompatibilitní kontroly Mineclonie
 
-## Fáze 2 – Vnímání, paměť a naučený model světa
+## Fáze 2 – Dvě testovací NPC
 
-Stav: **plán**
+Stav: **plán po schválení/instalaci**
 
-- [ ] world adapter oddělující engine truth
-- [ ] omezené smyslové snapshoty
+- [ ] příkaz pro vytvoření dvou testovacích NPC před hráčem
+- [ ] samostatná identita každého NPC
+- [ ] oddělená paměť
+- [ ] debug inspector pro hráče/testera
+- [ ] měření výkonu telefonu
+- [ ] reportovací scénáře
+
+## Fáze 3 – Vnímání, paměť a naučený model světa
+
+- [ ] první omezené senzory
 - [ ] dohled, dosah a zakrytí
 - [ ] reprezentace neznámých objektů
-- [ ] nejistota a confidence
-- [ ] pozorování následků vlastních akcí
+- [ ] nejistota
 - [ ] pracovní paměť
-- [ ] dlouhodobá epizodická paměť
-- [ ] naučené vztahy mezi objekty a materiály
-- [ ] naučená místa a trasy
-- [ ] oddělit debug senzory od AI senzorů
-- [ ] limity a čištění paměti
-- [ ] migrace uloženého stavu
+- [ ] epizodická paměť
+- [ ] naučený model objektů, míst a následků
+- [ ] oddělení debug dat od AI
 
-Podmínka dokončení: Alua dokáže budovat vlastní omezený model okolí bez přímého přístupu ke kompletní sémantické pravdě enginu.
+## Fáze 4 – Potřeby, cíle a plánování
 
-## Fáze 3 – Potřeby, cíle a rozhodování
-
-- [ ] model potřeb
-- [ ] utility scoring
+- [ ] potřeby
+- [ ] utility
 - [ ] výběr cíle
-- [ ] arbitráž rozhodnutí
-- [ ] přerušení při nebezpečí
-- [ ] rozhodování podle vlastních přesvědčení, ne podle engine truth
+- [ ] registr akcí
+- [ ] vícekrokové plánování
+- [ ] přeplánování po neúspěchu
 - [ ] vysvětlitelná stopa rozhodnutí
 
-## Fáze 4 – Plánování a dovednosti
+## Fáze 5 – Materiální a fyzikální svět
 
-- [ ] registr schopností
-- [ ] vícekrokový plánovač
-- [ ] pohybové akce
-- [ ] práce s předměty
-- [ ] inventář
-- [ ] objevování a používání craftingu
-- [ ] získávání zdrojů
-- [ ] bezpečné selhání a přeplánování
-
-## Fáze 5 – Modulární úpravy světa
-
-Generátor mapy zůstává beze změny.
-
-- [x] navrhnout obecný systém materiálových a fyzikálních vlastností
-- [ ] registr materiálů
-- [ ] skládání objektů z více materiálů
+- [x] návrh obecného systému materiálů
+- [ ] registr skutečných materiálů
 - [ ] hustota, objem a odvozená hmotnost
-- [ ] mechanické, tepelné a environmentální vlastnosti
-- [ ] stav konkrétního kusu předmětu
-- [ ] obecné vztahy pro zpracování a kombinace materiálů
-- [ ] hmotnost a zatížení
-- [ ] vybraná pravidla pohybu a fyziky
-- [ ] pády a nárazy
-- [ ] voda a prostředí
-- [ ] opotřebení a opravy
-- [ ] environmentální stavy
-- [ ] kompatibilitní vrstva pro změny Mineclonie
+- [ ] mechanické vlastnosti
+- [ ] teplota a hoření
+- [ ] voda, vlhkost a vztlak
+- [ ] koroze a opotřebení
+- [ ] složené předměty
+- [ ] zatížení inventáře
+- [ ] obecné zpracování a kombinace materiálů
 
-## Fáze 6 – Učení a adaptace
+## Fáze 6 – Živá populace
+
+- [x] návrh čtyř úrovní simulace
+- [ ] životní cyklus NPC
+- [ ] věk
+- [ ] rozmnožování
+- [ ] rodiny/domácnosti
+- [ ] migrace
+- [ ] práce a role
+- [ ] aktivace a uspávání vzdálených NPC
+
+## Fáze 7 – Ekonomika a společnost
+
+- [ ] vlastnictví
+- [ ] zásoby
+- [ ] výroba a spotřeba
+- [ ] obchod
+- [ ] ceny podle nabídky/poptávky
+- [ ] vztahy
+- [ ] reputace
+- [ ] frakce a osady
+
+## Fáze 8 – Příběh a kampaň
+
+- [ ] systém událostí
+- [ ] questy
+- [ ] kapitoly kampaně
+- [ ] podmíněné větvení
+- [ ] propojení příběhu s živou simulací bez přímého ovládání AI
+
+## Fáze 9 – Učení a adaptace
 
 - [ ] sledování výsledků akcí
 - [ ] učení vztahů objekt–akce–výsledek
-- [ ] učení užitečnosti materiálů a nástrojů
-- [ ] úprava preferencí
-- [ ] úprava utility podle zkušeností
 - [ ] revize chybných přesvědčení
 - [ ] bezpečnostní limity adaptace
-- [ ] možnost resetu naučených dat
+- [ ] reset naučených dat
 
-## Fáze 7 – Stabilita a nástroje
+## Fáze 10 – Stabilita
 
 Průběžně:
-
 - [ ] výkonové limity
-- [ ] migrační framework
-- [ ] debug HUD/logging
-- [ ] regresní scénáře
-- [ ] matice kompatibility Mineclonia
+- [ ] migrace save
+- [ ] regresní testy
+- [ ] kompatibilita Mineclonia
 - [ ] release checklist
