@@ -100,3 +100,7 @@ Po spuštění Worldu a Bridge:
 5. risk learning;
 6. multi-step planner;
 7. až potom destruktivnější autonomní manipulace.
+
+## Oprava CI 2026-10-06
+
+Aktivní ověřování nejistých zkušeností mělo konflikt priorit: `scan_obstacle` přebíjel `inspect_object`. Priorita ověřovacího cíle byla opravena tak, aby první dva kontrolní pokusy proběhly a po třetím se cíl dál nenabízel. Tato oprava nemění Bridge ani World kontrakt.

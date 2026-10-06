@@ -88,3 +88,7 @@ Implementováno:
 - E2E smoke helper pro skutečný tříprocesový běh.
 
 Destruktivní pickup/push/break nejsou v autonomní policy používány. Nejdříve musí vzniknout risk/utility model.
+
+## 2026-10-06 – oprava priority aktivního ověřování
+
+CI odhalilo, že nová evidence-driven kontrola známého, ale nejistého objektu byla v reálném výběru cílů přebita obecnou prioritou `scan_obstacle`. Nešlo o transportní ani world kontrakt, ale o pořadí intrinsic goals. Ověřovací `inspect_object` má nyní po první a druhé zkušenosti dočasně vyšší prioritu; po třetím pokusu dál zaniká. Tím zůstává chování bounded a agent se nezacyklí v dotýkání stejného objektu.

@@ -80,7 +80,10 @@ class IntrinsicCurriculum:
             novel = nearest.appearance_id in novel_appearance_ids
             needs_verification = attempts < 3 and failures < 2
             if novel or needs_verification:
-                base = 0.95 if novel else max(0.58, 0.70 - attempts * 0.06)
+                # Ověření známého, ale ještě nejistého objektu musí mít dočasně
+                # vyšší informační prioritu než obecný scan překážky. Po třetím
+                # pokusu kandidát inspect_object zanikne přes needs_verification.
+                base = 0.95 if novel else max(0.80, 0.86 - attempts * 0.03)
                 candidates.append(
                     GoalCandidate(
                         key=key,
