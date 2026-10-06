@@ -1,60 +1,77 @@
-# Alua
+# Alua AI
 
-Alua je experimentální autonomní inteligence pro Luanti, aktuálně testovaná s hrou **Mineclonia**.
+Alua je samostatný kognitivní systém pro autonomní agenty žijící v AluaWorld.
 
-Současná verze je už hratelná: hráč může vyvolat jednoho trvalého společníka Alua, přepínat jeho chování, přivolat ho, zobrazit jednoduchou paměť a spustit diagnostický scan.
+Od 2026-10-06 je hlavní architektura projektu změněna: Alua už není Luanti mod a nesmí být přímo napojená na engine. AluaWorld je autoritativní fyzický svět, AluaBridge je bezpečná transportní a epistemická hranice a tento repozitář vlastní pouze kognici.
 
-## Hlavní vize
+Tok systému:
 
-Alua sama je AI. Projekt nemá být jen obal kolem externího LLM nebo vzdálené AI služby. Inteligence se bude postupně skládat z vlastních modulů pro vnímání, paměť, potřeby, cíle, plánování, akce a učení.
+    AluaWorld -> AluaBridge -> Alua AI
+    Alua AI   -> AluaBridge -> AluaWorld
 
-Mineclonia zůstává základním světem. Nechceme předělávat generátor mapy, ale budeme postupně upravovat vybraná pravidla světa: fyziku, předměty, interakce, prostředí a další mechaniky.
+Alua AI smí přijímat pouze vjemy svého těla, vytvářet si vlastní paměť a přesvědčení a žádat o primitivní akce. Nesmí číst mapu, technické názvy nodů, materiály, biomy, recepty, interní objekty ani administrátorská data.
 
-## Aktuální funkce
+## Aktuální stav
 
-- trvalá entita společníka navázaná na vlastníka
-- následování hráče
-- režim následovat / čekat
-- interakce pravým kliknutím
-- přivolání
-- jednoduchá perzistentní paměť poslední známé pozice vlastníka
-- diagnostický scan okolí
-- stavový výpis
-- jeden aktivní společník na hráče
+Hotovo:
+- historický Luanti companion prototyp s follow/stay/recall;
+- původní modulární Lua základ a verzovaný stav;
+- dlouhodobá vize učení bez vševědoucnosti;
+- AluaBridge V1 na samostatném repozitáři;
+- nový dokumentační základ pro samostatnou Alua AI;
+- přesný kontrakt vůči AluaBridge;
+- návrh kognitivní architektury, paměti, učení, testování a provozu.
 
-## Příkazy
+Nehotovo:
+- nový Python runtime Alua AI;
+- Bridge klient;
+- pracovní a dlouhodobá paměť v nové architektuře;
+- world model;
+- potřeby a cíle;
+- plánování a rozhodování;
+- učení z následků;
+- end-to-end test s jedním tělem v AluaWorld.
 
-```
-/alua_test
-/alua_spawn
-/alua_follow
-/alua_stay
-/alua_recall
-/alua_status
-/alua_scan
-/alua_remove
-/alua_help
-```
+Starý Lua kód zůstává zatím v repozitáři jako historický funkční prototyp. Nesmí se dále rozšiřovat jako hlavní mozek.
+
+## Neměnné hranice
+
+1. Alua AI nemá přímou závislost na Luanti.
+2. Jediné runtime spojení se světem vede přes Agent API AluaBridge.
+3. Bridge nevlastní kognici a Alua nevlastní fyziku světa.
+4. Význam neznámých věcí vzniká učením, ne převodem technických ID.
+5. target_ref je krátkodobý handle, ne identita objektu.
+6. ACK akce není fyzický výsledek; následek se poznává až z budoucích vjemů.
+7. Kognitivní paměť musí přežít restart AI a nesmí být uložená v Bridge.
+8. Každé naučené tvrzení musí mít evidenci, confidence a možnost opravy.
+9. Zásadní změna není hotová bez testu a dokumentace.
 
 ## Dokumentace
 
-- [VISION.md](VISION.md) – dlouhodobá vize a nepřekročitelná pravidla
-- [ROADMAP.md](ROADMAP.md) – fáze vývoje a podmínky dokončení
-- [ARCHITECTURE.md](ARCHITECTURE.md) – modulární architektura a hranice systémů
-- [PERCEPTION_MODEL.md](PERCEPTION_MODEL.md) – pravidla vnímání, neznalosti a učení
-- [WORLD_SCOPE.md](WORLD_SCOPE.md) – co ve světě měníme a co ne
-- [CHANGE_POLICY.md](CHANGE_POLICY.md) – povinná pravidla pro změny a dokumentaci
-- [CHANGELOG.md](CHANGELOG.md) – historie skutečně provedených změn
-- [DECISIONS.md](DECISIONS.md) – důležitá architektonická rozhodnutí
+Nejdůležitější dokument pro nový chat:
+- docs/PAMET_PRO_NOVY_CHAT.md
 
-## Jazyk dokumentace
+Dále:
+- docs/PROJECT_VISION_AI.md
+- docs/ARCHITECTURE.md
+- docs/BRIDGE_CONTRACT.md
+- docs/PERCEPTION_AND_BELIEFS.md
+- docs/MEMORY_MODEL.md
+- docs/LEARNING_AND_DECISION.md
+- docs/REPOSITORY_BOUNDARIES.md
+- docs/SECURITY_AND_DATA_POLICY.md
+- docs/ROADMAP.md
+- docs/TESTING.md
+- docs/OPERATIONS_TERMUX.md
+- docs/WORKING_RULES_FOR_FUTURE_CHATS.md
+- docs/IMPLEMENTATION_LOG_AI.md
+- docs/DECISIONS.md
+- CHANGELOG.md
 
-Interní dokumentace projektu je vedena **česky**. Kódové názvy modulů, funkcí a rozhraní mohou být anglicky.
+## Historický prototyp
 
-## Povinné pravidlo vývoje
-
-Významná změna kódu nebo herního chování není považována za dokončenou, dokud nejsou ve stejné změně aktualizované příslušné dokumenty.
+Soubory init.lua, npc.lua, commands.lua a core/ pocházejí z období, kdy byla Alua navržena jako Luanti companion mod. Jsou důležité jako historie a referenční prototyp, ale nejsou cílovou architekturou nové Alua AI.
 
 ## Licence
 
-MIT
+MIT.

@@ -2,35 +2,38 @@
 
 ## Nezveřejněno
 
-### Architektura
-- přidáno modulární jádro: registr modulů, event bus a verzovaný persistentní stav
-- definována hranice mezi technickou pravdou enginu a vnímáním AI
-- stanoveno pravidlo, že Alua nesmí používat vševědoucí data enginu pro autonomní rozhodování
-- doplněn model vnímání, neznalosti a učení
+### 2026-10-06 – přechod na samostatnou Alua AI
 
-### Dokumentace
-- interní dokumentace převedena do češtiny
-- zavedeno pravidlo, že další interní dokumentace musí být česky
-- vytvořena vize, roadmapa, architektura, rozsah světa, pravidla změn a architektonická rozhodnutí
+Architektura:
+- Alua je nově definována jako samostatný kognitivní proces mimo Luanti;
+- jediným runtime rozhraním ke světu je AluaBridge Agent API;
+- AluaWorld vlastní fyziku, tělo, smyslový původ signálu a následky akcí;
+- AluaBridge vlastní transport, session, bounded fronty, target_ref, lease a ACK;
+- Alua vlastní paměť, přesvědčení, cíle, plánování, rozhodování a učení;
+- starý Lua companion je označen jako historický prototyp, ne cílový mozek.
+
+Dokumentace:
+- založen dokumentační standard po vzoru AluaWorld;
+- přidána projektová paměť pro další chaty;
+- přidán přesný Bridge kontrakt;
+- přidána cílová kognitivní architektura;
+- popsán model vnímání, přesvědčení, paměti a učení;
+- přidána pravidla bezpečnosti, testování, provozu a budoucí práce;
+- aktualizována roadmapa a architektonická rozhodnutí.
+
+### Předchozí historie
 
 ## 0.2.0 – 2026-09-24
 
-### Přidáno
-- trvalý společník navázaný na vlastníka
-- follow a stay
-- recall
-- přepnutí pravým kliknutím
-- jednoduchá paměť pozice vlastníka
-- stavový a diagnostický scan příkaz
-- odstranění společníka a nápověda
-
-### Změněno
-- ContentDB popis rozšířen z jednoduchého stubu na funkční companion
-- Mineclonia nastavena jako podporovaná hra
+- trvalý Luanti companion navázaný na vlastníka;
+- follow, stay a recall;
+- jednoduchá paměť pozice vlastníka;
+- diagnostický scan;
+- modulární Lua základ: registry, events, verzovaný state;
+- dokumentace původní perception boundary.
 
 ## 0.1.0 – 2026-09-24
 
-### Přidáno
-- první kostra Luanti modu
-- diagnostický příkaz `/alua_test`
-- ContentDB metadata a MIT licence
+- první kostra Luanti modu;
+- diagnostický příkaz;
+- ContentDB metadata a MIT licence.
