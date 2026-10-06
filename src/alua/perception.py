@@ -5,35 +5,107 @@ from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
+class TargetPercept:
+    target_ref: str
+    appearance_id: str | None
+    distance_fraction: float | None
+    blocks_motion: bool | None
+    liquid: bool | None
+    ray_index: int
+
+
+@dataclass(frozen=True, slots=True)
 class PerceptionFrame:
     sequence: int
     simulation_time: float
     persistent: dict[str, Any]
-    target_refs: tuple[str, ...]
+    targets: tuple[TargetPercept, ...]
     appearance_ids: tuple[str, ...]
+    motor_events: tuple[dict[str, Any], ...]
+
+    @property
+    def target_refs(self) -> tuple[str, ...]:
+        return tuple(target.target_ref for target in self.targets)
 
 
-def _sanitize(value: Any, targets: list[str], appearances: list[str]) -> Any:
+def _sanitize(value: Any, appearances: list[str]) -> Any:
     if isinstance(value, dict):
         result: dict[str, Any] = {}
         for key, item in value.items():
             if key == "target_ref":
-                if isinstance(item, str):
-                    targets.append(item)
                 continue
             if key == "appearance_id" and isinstance(item, str):
                 appearances.append(item)
-            result[key] = _sanitize(item, targets, appearances)
+            result[key] = _sanitize(item, appearances)
         return result
     if isinstance(value, list):
-        return [_sanitize(item, targets, appearances) for item in value]
+        return [_sanitize(item, appearances) for item in value]
     return value
 
 
+def _number(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
+def _targets(channels: dict[str, Any]) -> tuple[TargetPercept, ...]:
+    vision = channels.get("vision")
+    if not isinstance(vision, dict):
+        return ()
+    rays = vision.get("rays")
+    if not isinstance(rays, list):
+        return ()
+    result: list[TargetPercept] = []
+    for index, ray in enumerate(rays):
+        if not isinstance(ray, dict):
+            continue
+        target_ref = ray.get("target_ref")
+        if not isinstance(target_ref, str) or not target_ref:
+            continue
+        appearance_id = ray.get("appearance_id")
+        result.append(
+            TargetPercept(
+                target_ref=target_ref,
+                appearance_id=appearance_id if isinstance(appearance_id, str) else None,
+                distance_fraction=_number(ray.get("distance_fraction")),
+                blocks_motion=ray.get("blocks_motion") if isinstance(ray.get("blocks_motion"), bool) else None,
+                liquid=ray.get("liquid") if isinstance(ray.get("liquid"), bool) else None,
+                ray_index=index,
+            )
+        )
+    return tuple(result)
+
+
+def _motor_events(channels: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+    motor = channels.get("motor")
+    if not isinstance(motor, dict) or not isinstance(motor.get("events"), list):
+        return ()
+    result: list[dict[str, Any]] = []
+    for event in motor["events"]:
+        if not isinstance(event, dict):
+            continue
+        source_sequence = event.get("source_sequence")
+        if not isinstance(source_sequence, int) or isinstance(source_sequence, bool) or source_sequence < 1:
+            continue
+        result.append(
+            {
+                "source_sequence": source_sequence,
+                "success_signal": _number(event.get("success_signal")) or 0.0,
+                "feedback_signal": event.get("feedback_signal")
+                if isinstance(event.get("feedback_signal"), str)
+                else "no_effect",
+                "effort_signal": _number(event.get("effort_signal")) or 0.0,
+                "age_fraction": _number(event.get("age_fraction")) or 0.0,
+            }
+        )
+    return tuple(result)
+
+
 def build_frame(observation: dict[str, Any]) -> PerceptionFrame:
-    targets: list[str] = []
+    channels = observation["channels"]
     appearances: list[str] = []
-    persistent_channels = _sanitize(observation["channels"], targets, appearances)
+    persistent_channels = _sanitize(channels, appearances)
     return PerceptionFrame(
         sequence=observation["sequence"],
         simulation_time=observation["simulation_time"],
@@ -43,6 +115,7 @@ def build_frame(observation: dict[str, Any]) -> PerceptionFrame:
             "simulation_time": observation["simulation_time"],
             "channels": persistent_channels,
         },
-        target_refs=tuple(dict.fromkeys(targets)),
+        targets=_targets(channels),
         appearance_ids=tuple(appearances),
+        motor_events=_motor_events(channels),
     )

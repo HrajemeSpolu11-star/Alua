@@ -10,8 +10,10 @@ from typing import Any
 from .bridge_client import BridgeClient
 from .config import Config
 from .errors import BridgeHttpError, BridgeUnavailable, ProtocolError
+from .learning import learn_from_motor_outcome
+from .memory import WorkingMemory
 from .perception import PerceptionFrame, build_frame
-from .policy import BootstrapPolicy
+from .policy import ExplorationPolicy
 from .store import Store
 
 
@@ -23,6 +25,7 @@ class StepResult:
     session_id: str
     session_changed: bool
     observations_processed: int
+    outcomes_resolved: int
     action_submitted: bool
     decision_id: str | None
 
@@ -33,12 +36,14 @@ class Runtime:
         config: Config,
         store: Store,
         bridge: BridgeClient | Any,
-        policy: BootstrapPolicy | None = None,
+        policy: ExplorationPolicy | None = None,
+        memory: WorkingMemory | None = None,
     ):
         self.config = config
         self.store = store
         self.bridge = bridge
-        self.policy = policy or BootstrapPolicy()
+        self.policy = policy or ExplorationPolicy()
+        self.memory = memory or WorkingMemory(capacity=32)
         self.store.ensure_agent(config.agent_id)
 
     @staticmethod
@@ -51,34 +56,73 @@ class Runtime:
         ).encode("utf-8")
         return "mind-" + hashlib.sha256(encoded).hexdigest()[:32]
 
+    def _resolve_motor_events(self, session_id: str, frame: PerceptionFrame) -> int:
+        resolved = 0
+        for event in frame.motor_events:
+            expectation = self.store.resolve_expectation(
+                agent_id=self.config.agent_id,
+                session_id=session_id,
+                bridge_action_sequence=event["source_sequence"],
+                outcome=event,
+                resolved_sequence=frame.sequence,
+            )
+            if expectation is None:
+                continue
+            learn_from_motor_outcome(
+                self.store,
+                self.config.agent_id,
+                expectation,
+                event,
+                frame.sequence,
+            )
+            resolved += 1
+        return resolved
+
     def step(self) -> StepResult:
         session = self.bridge.session()
         session_id = session["session_id"]
         changed = self.store.apply_session(self.config.agent_id, session_id)
+        if changed:
+            self.memory.clear()
+
         state = self.store.state(self.config.agent_id)
         cursor = int(state["last_observation_sequence"])
 
         observations = self.bridge.observations(cursor)
         latest: PerceptionFrame | None = None
-        novel_count = 0
+        latest_novel: set[str] = set()
         processed = 0
+        outcomes_resolved = 0
 
         for observation in observations:
             frame = build_frame(observation)
             if frame.sequence <= cursor:
                 raise ProtocolError("Bridge vrátil duplicitní nebo klesající observation sequence")
+
             seen = self.store.seen_appearance_ids(self.config.agent_id, frame.appearance_ids)
-            current_novel = len(set(frame.appearance_ids) - seen)
+            current_novel = set(frame.appearance_ids) - seen
+            outcomes_resolved += self._resolve_motor_events(session_id, frame)
+
             if self.store.record_observation(self.config.agent_id, session_id, frame):
                 processed += 1
+                self.memory.add(frame)
                 latest = frame
-                novel_count = current_novel
+                latest_novel = current_novel
                 cursor = frame.sequence
 
-        if latest is None:
-            return StepResult(session_id, changed, processed, False, None)
+            self.store.expire_old_expectations(
+                self.config.agent_id,
+                session_id,
+                frame.sequence,
+            )
 
-        intent = self.policy.choose(latest, novel_count)
+        if latest is None:
+            return StepResult(session_id, changed, processed, outcomes_resolved, False, None)
+
+        if self.store.pending_expectation_count(self.config.agent_id, session_id) > 0:
+            return StepResult(session_id, changed, processed, outcomes_resolved, False, None)
+
+        intent = self.policy.choose(latest, latest_novel, self.memory)
         action: dict[str, Any] = {
             "schema_version": 1,
             "agent_id": self.config.agent_id,
@@ -108,8 +152,23 @@ class Runtime:
             intent.rationale,
         )
         response = self.bridge.submit_action(action)
-        self.store.mark_decision_submitted(decision_id, response["request_id"], response["status"])
-        return StepResult(session_id, changed, processed, True, decision_id)
+        self.store.mark_decision_submitted(
+            decision_id,
+            response["request_id"],
+            response["status"],
+            response["action_sequence"],
+        )
+        self.store.record_expectation(
+            decision_id=decision_id,
+            agent_id=self.config.agent_id,
+            session_id=session_id,
+            bridge_action_sequence=response["action_sequence"],
+            action_type=intent.action_type,
+            target_signature=intent.target_signature,
+            action=action,
+            created_sequence=latest.sequence,
+        )
+        return StepResult(session_id, changed, processed, outcomes_resolved, True, decision_id)
 
     def run_forever(self) -> None:
         backoff = self.config.poll_interval
