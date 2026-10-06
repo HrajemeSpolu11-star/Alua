@@ -11,6 +11,9 @@ Před změnou Alua AI přečíst:
 6. nejnovější CHANGELOG.md;
 7. dokument měněné domény.
 
+Při změně lifecycle, persistence, retry nebo session číst navíc:
+- docs/IDENTITY_SESSION_RECOVERY.md.
+
 Pokud se mění Bridge schema, ověřit také aktuální dokumentaci repozitáře AluaBridge.
 
 Pokud se mění význam smyslu nebo těla, ověřit AluaWorld docs/AGENT_WORLD_CONTRACT.md.
@@ -32,6 +35,7 @@ Stejně jako AluaWorld:
 - zásadní rozhodnutí se přidává do docs/DECISIONS.md;
 - aktuální stav se přepisuje v docs/PAMET_PRO_NOVY_CHAT.md;
 - implementační průběh se zapisuje do docs/IMPLEMENTATION_LOG_AI.md;
+- datované audity se nepřepisují jako aktuální pravda;
 - staré rozhodnutí se nemaže bez vysvětlení; novější ADR jej může nahradit.
 
 ## Před novým modulem určit

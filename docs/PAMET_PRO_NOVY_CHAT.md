@@ -47,6 +47,23 @@ Existuje:
 
 Bootstrap policy zatím neposílá move/look/manipulate. Je to záměr: AluaWorld ještě nemá zdokumentované a end-to-end ověřené parametry persistentního AI body adapteru. Mozek nesmí parametry těla vymyslet sám.
 
+## Poslední ověřený audit
+
+Dne 2026-10-06 byl proti commitu ab0d119 ověřen skutečný runtime a zelené GitHub CI.
+
+Audit je v:
+- docs/AUDIT_2026-10-06.md
+
+Přesná pravidla identity, session a restartů:
+- docs/IDENTITY_SESSION_RECOVERY.md
+
+Hlavní otevřené technické body:
+- skutečný end-to-end běh ještě chybí;
+- před schema v2 je nutný migrační framework;
+- před aktivními akcemi je nutná reconciliation decisions při změně session;
+- belief store a outcome attribution ještě nejsou implementované;
+- stabilita appearance_id napříč session musí být smluvně potvrzena.
+
 ## Stav AluaBridge
 
 Bridge V1 existuje a má:
@@ -93,11 +110,12 @@ Výsledek se bude učit až z budoucí observation.
 
 ## Bezprostřední další práce
 
-1. ověřit CI;
-2. napojit runtime na skutečný AluaBridge;
-3. v AluaWorld vytvořit persistentní AI body adapter s přesným move/look kontraktem;
-4. doplnit bounded working memory;
-5. belief store + evidence;
-6. pending expectations a outcome attribution;
-7. aktivní exploraci;
-8. až potom planner.
+1. ověřit skutečný AluaBridge + Alua runtime;
+2. v AluaWorld vytvořit persistentní AI body adapter s přesným move/look kontraktem;
+3. udělat restart/recovery E2E scénář;
+4. doplnit SQLite migrace;
+5. bounded working memory;
+6. belief store + evidence;
+7. pending expectations a outcome attribution;
+8. aktivní exploraci;
+9. až potom planner.

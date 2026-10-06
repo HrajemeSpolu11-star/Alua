@@ -12,10 +12,12 @@ Stav: hotovo 2026-10-06.
 - memory model;
 - belief boundary;
 - security/data policy;
+- identity/session/recovery contract;
 - testing plan;
 - provozní plán pro Termux;
 - pravidla dalších chatů;
-- projektová paměť.
+- projektová paměť;
+- datovaný audit skutečné implementace.
 
 ## Fáze B – samostatný runtime
 
@@ -43,6 +45,7 @@ Hotovo:
 Zbývá:
 - ověřit proti skutečně běžícímu AluaBridge;
 - dlouhodobý restart test na telefonu;
+- reconciliation decisions při změně session;
 - migrační framework před schema v2.
 
 ## Fáze C – perception + working memory
@@ -61,7 +64,8 @@ Zbývá:
 - novelty tracking přes více modalit;
 - časové události a sensory gaps;
 - aktivní target lifecycle;
-- explicitní uncertainty representation.
+- explicitní uncertainty representation;
+- potvrdit stabilitu appearance_id přes session nebo zavést signature epoch.
 
 ## Fáze D – episodic memory + beliefs
 

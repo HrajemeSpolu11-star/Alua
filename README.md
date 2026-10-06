@@ -32,6 +32,8 @@ Implementováno v nové Python architektuře:
 - statický audit hranic;
 - GitHub CI.
 
+Dokumentační audit 2026-10-06 potvrdil, že výše uvedené hranice odpovídají skutečnému kódu. Zároveň eviduje otevřené blokery před plnou autonomií.
+
 Nehotovo:
 - plnohodnotná working memory;
 - evidence-based belief store;
@@ -80,6 +82,7 @@ Dále:
 - docs/PROJECT_VISION_AI.md
 - docs/ARCHITECTURE.md
 - docs/BRIDGE_CONTRACT.md
+- docs/IDENTITY_SESSION_RECOVERY.md
 - docs/PERCEPTION_AND_BELIEFS.md
 - docs/MEMORY_MODEL.md
 - docs/LEARNING_AND_DECISION.md
@@ -87,6 +90,7 @@ Dále:
 - docs/SECURITY_AND_DATA_POLICY.md
 - docs/ROADMAP.md
 - docs/TESTING.md
+- docs/AUDIT_2026-10-06.md
 - docs/OPERATIONS_TERMUX.md
 - docs/WORKING_RULES_FOR_FUTURE_CHATS.md
 - docs/IMPLEMENTATION_LOG_AI.md

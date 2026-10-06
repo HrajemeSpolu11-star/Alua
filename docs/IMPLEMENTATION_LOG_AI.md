@@ -44,3 +44,28 @@ Implementován vertikální základ:
 
 Důležité rozhodnutí:
 první policy používá pouze wait. Přímé move/look/manipulate nebude zapnuto, dokud AluaWorld nebude mít persistentní AI tělo a přesný parametrický kontrakt těchto akcí. To zabraňuje tomu, aby si Alua repo samo vytvořilo skrytou fyziku těla.
+
+## 2026-10-06 – audit, identita a recovery
+
+Po zeleném CI byl nový runtime porovnán s dokumentací.
+
+Potvrzeno:
+- loopback-only Bridge konfigurace;
+- Agent token pouze v prostředí;
+- síť pouze přes bridge_client.py;
+- druhá world-truth kontrola;
+- odstranění target_ref z dlouhodobé persistence;
+- samostatná SQLite kognitivní paměť;
+- bezpečný bootstrap pouze přes wait.
+
+Doplněno:
+- datovaný audit docs/AUDIT_2026-10-06.md;
+- kontrakt docs/IDENTITY_SESSION_RECOVERY.md;
+- ADR pro dlouhodobé agent_id a session transition.
+
+Audit zároveň záměrně ponechal jako otevřené blokery:
+- skutečný E2E běh;
+- DB migrace;
+- reconciliation decisions po změně session;
+- belief/outcome vrstvu;
+- ověření stability appearance_id přes session.

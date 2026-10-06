@@ -2,6 +2,16 @@
 
 ## Nezveřejněno
 
+### 2026-10-06 – audit dokumentace a recovery kontrakt
+
+- proveden audit skutečné implementace proti dokumentované architektuře;
+- přidán docs/AUDIT_2026-10-06.md s ověřenými invarianty, riziky a prioritami;
+- přidán docs/IDENTITY_SESSION_RECOVERY.md;
+- přesně oddělen agent_id, session_id, observation sequence, decision_id, request_id a target_ref;
+- zdokumentovány restarty Alua/Bridge/World, timeouty, 401/403, 409 a 429;
+- zapsána podmínka, že aktivní decisions ze staré session musí být před budoucí manipulací explicitně reconciliovány;
+- zaznamenáno otevřené riziko stability appearance_id přes session.
+
 ### 2026-10-06 – první samostatný Alua AI runtime
 
 Implementováno:

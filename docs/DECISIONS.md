@@ -84,6 +84,28 @@ Datum: 2026-10-06
 
 Původní Luanti prototyp se nemaže v první migrační změně. Nový Python runtime na něm ale nesmí záviset.
 
+## ADR-A011 – agent_id je dlouhodobá identita Alua
+
+Stav: přijato
+Datum: 2026-10-06
+
+Restart procesu, Bridge ani Worldu nesmí sám o sobě vytvořit novou osobnost.
+
+agent_id je dlouhodobá identita kognitivního agenta. Přesná biologická semantika smrti těla a případného nového těla bude rozhodnuta samostatně.
+
+## ADR-A012 – změna session invaliduje ephemeral stav, ne automaticky dlouhodobou zkušenost
+
+Stav: přijato
+Datum: 2026-10-06
+
+Nový session_id:
+- zahazuje target_ref;
+- ruší krátkodobé world-specific plány;
+- resetuje observation cursor;
+- nesmí automaticky vymazat epizodickou paměť a beliefs stejného agent_id.
+
+Před aktivní manipulací musí runtime umět reconciliovat pending/planned decisions ze staré session.
+
 ## Historická rozhodnutí
 
 Původní ADR z 2026-09-24 jsou zachována v Git historii. Část principů zůstává platná:
