@@ -11,7 +11,7 @@ from typing import Any, Iterator
 from .perception import PerceptionFrame
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def canonical_json(value: Any) -> str:
@@ -131,8 +131,14 @@ class Store:
                 """
             )
 
-            if not self._has_column(db, "decisions", "bridge_action_sequence"):
-                db.execute("ALTER TABLE decisions ADD COLUMN bridge_action_sequence INTEGER")
+            for column, definition in (
+                ("bridge_action_sequence", "INTEGER"),
+                ("goal_key", "TEXT"),
+                ("goal_kind", "TEXT"),
+                ("skill_key", "TEXT"),
+            ):
+                if not self._has_column(db, "decisions", column):
+                    db.execute(f"ALTER TABLE decisions ADD COLUMN {column} {definition}")
 
             db.executescript(
                 """
@@ -168,8 +174,53 @@ class Store:
                     updated_at REAL NOT NULL,
                     PRIMARY KEY(agent_id, belief_key)
                 );
+                CREATE TABLE IF NOT EXISTS goal_stats(
+                    agent_id TEXT NOT NULL,
+                    goal_key TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    subject_signature TEXT,
+                    priority REAL NOT NULL,
+                    attempts INTEGER NOT NULL,
+                    successes INTEGER NOT NULL,
+                    failures INTEGER NOT NULL,
+                    first_sequence INTEGER NOT NULL,
+                    last_sequence INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(agent_id, goal_key)
+                );
+                CREATE TABLE IF NOT EXISTS skills(
+                    agent_id TEXT NOT NULL,
+                    skill_key TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    goal_kind TEXT NOT NULL,
+                    target_signature TEXT,
+                    steps_json TEXT NOT NULL,
+                    success_count INTEGER NOT NULL,
+                    failure_count INTEGER NOT NULL,
+                    confidence REAL NOT NULL,
+                    reusable INTEGER NOT NULL,
+                    first_sequence INTEGER NOT NULL,
+                    last_sequence INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(agent_id, skill_key)
+                );
+                CREATE INDEX IF NOT EXISTS idx_skills_goal
+                    ON skills(agent_id, goal_kind, reusable, confidence);
+                CREATE INDEX IF NOT EXISTS idx_goals_kind
+                    ON goal_stats(agent_id, kind, updated_at);
                 """
             )
+
+            for column, definition in (
+                ("goal_key", "TEXT"),
+                ("goal_kind", "TEXT"),
+                ("skill_key", "TEXT"),
+            ):
+                if not self._has_column(db, "expectations", column):
+                    db.execute(f"ALTER TABLE expectations ADD COLUMN {column} {definition}")
+
             db.execute(
                 "INSERT INTO meta(key,value) VALUES('schema_version',?) "
                 "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -202,14 +253,20 @@ class Store:
     def state(self, agent_id: str) -> dict[str, Any]:
         self.ensure_agent(agent_id)
         with self._lock:
-            row = self._db.execute("SELECT * FROM runtime_state WHERE agent_id=?", (agent_id,)).fetchone()
+            row = self._db.execute(
+                "SELECT * FROM runtime_state WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()
         return dict(row)
 
     def apply_session(self, agent_id: str, session_id: str) -> bool:
         self.ensure_agent(agent_id)
         now = time.time()
         with self._transaction() as db:
-            row = db.execute("SELECT session_id FROM runtime_state WHERE agent_id=?", (agent_id,)).fetchone()
+            row = db.execute(
+                "SELECT session_id FROM runtime_state WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()
             old = row["session_id"]
             changed = old != session_id
             if changed:
@@ -232,7 +289,10 @@ class Store:
                     (now, agent_id, session_id),
                 )
             else:
-                db.execute("UPDATE runtime_state SET updated_at=? WHERE agent_id=?", (now, agent_id))
+                db.execute(
+                    "UPDATE runtime_state SET updated_at=? WHERE agent_id=?",
+                    (now, agent_id),
+                )
         return changed
 
     def seen_appearance_ids(self, agent_id: str, appearance_ids: tuple[str, ...]) -> set[str]:
@@ -247,7 +307,12 @@ class Store:
             ).fetchall()
         return {row["appearance_id"] for row in rows}
 
-    def record_observation(self, agent_id: str, session_id: str, frame: PerceptionFrame) -> bool:
+    def record_observation(
+        self,
+        agent_id: str,
+        session_id: str,
+        frame: PerceptionFrame,
+    ) -> bool:
         now = time.time()
         payload = canonical_json(strip_ephemeral(frame.persistent))
         with self._transaction() as db:
@@ -287,7 +352,10 @@ class Store:
 
     def decision(self, decision_id: str) -> dict[str, Any] | None:
         with self._lock:
-            row = self._db.execute("SELECT * FROM decisions WHERE decision_id=?", (decision_id,)).fetchone()
+            row = self._db.execute(
+                "SELECT * FROM decisions WHERE decision_id=?",
+                (decision_id,),
+            ).fetchone()
         return dict(row) if row else None
 
     def record_decision(
@@ -298,6 +366,10 @@ class Store:
         observation_sequence: int,
         action: dict[str, Any],
         rationale: dict[str, Any],
+        *,
+        goal_key: str | None = None,
+        goal_kind: str | None = None,
+        skill_key: str | None = None,
     ) -> None:
         now = time.time()
         persistent_action = strip_ephemeral(action)
@@ -305,8 +377,9 @@ class Store:
         with self._transaction() as db:
             db.execute(
                 "INSERT OR IGNORE INTO decisions("
-                "decision_id,agent_id,session_id,observation_sequence,action_type,action_json,rationale_json,status,created_at,updated_at"
-                ") VALUES(?,?,?,?,?,?,?,'planned',?,?)",
+                "decision_id,agent_id,session_id,observation_sequence,action_type,action_json,"
+                "rationale_json,status,goal_key,goal_kind,skill_key,created_at,updated_at"
+                ") VALUES(?,?,?,?,?,?,?,'planned',?,?,?,?,?)",
                 (
                     decision_id,
                     agent_id,
@@ -315,6 +388,9 @@ class Store:
                     action["type"],
                     canonical_json(persistent_action),
                     canonical_json(persistent_rationale),
+                    goal_key,
+                    goal_kind,
+                    skill_key,
                     now,
                     now,
                 ),
@@ -344,14 +420,17 @@ class Store:
         target_signature: str | None,
         action: dict[str, Any],
         created_sequence: int,
+        goal_key: str | None = None,
+        goal_kind: str | None = None,
+        skill_key: str | None = None,
     ) -> None:
         now = time.time()
         with self._transaction() as db:
             db.execute(
                 "INSERT OR REPLACE INTO expectations("
                 "decision_id,agent_id,session_id,bridge_action_sequence,action_type,target_signature,"
-                "action_json,created_sequence,state,created_at"
-                ") VALUES(?,?,?,?,?,?,?,?,'pending',?)",
+                "action_json,created_sequence,state,goal_key,goal_kind,skill_key,created_at"
+                ") VALUES(?,?,?,?,?,?,?,?,'pending',?,?,?,?,?)",
                 (
                     decision_id,
                     agent_id,
@@ -361,6 +440,9 @@ class Store:
                     target_signature,
                     canonical_json(strip_ephemeral(action)),
                     int(created_sequence),
+                    goal_key,
+                    goal_kind,
+                    skill_key,
                     now,
                 ),
             )
@@ -402,6 +484,10 @@ class Store:
                     row["decision_id"],
                 ),
             )
+            db.execute(
+                "UPDATE decisions SET status='resolved',updated_at=? WHERE decision_id=?",
+                (now, row["decision_id"]),
+            )
             result = dict(row)
             result["action"] = json.loads(result.pop("action_json"))
             return result
@@ -414,13 +500,25 @@ class Store:
         max_age_sequences: int = 12,
     ) -> int:
         threshold = int(current_sequence) - max(1, int(max_age_sequences))
+        now = time.time()
         with self._transaction() as db:
-            cursor = db.execute(
-                "UPDATE expectations SET state='expired',resolved_at=? "
-                "WHERE agent_id=? AND session_id=? AND state='pending' AND created_sequence<=?",
-                (time.time(), agent_id, session_id, threshold),
+            rows = db.execute(
+                "SELECT decision_id FROM expectations WHERE agent_id=? AND session_id=? "
+                "AND state='pending' AND created_sequence<=?",
+                (agent_id, session_id, threshold),
+            ).fetchall()
+            if not rows:
+                return 0
+            ids = [row["decision_id"] for row in rows]
+            db.executemany(
+                "UPDATE expectations SET state='expired',resolved_at=? WHERE decision_id=?",
+                [(now, decision_id) for decision_id in ids],
             )
-            return int(cursor.rowcount)
+            db.executemany(
+                "UPDATE decisions SET status='expired',updated_at=? WHERE decision_id=?",
+                [(now, decision_id) for decision_id in ids],
+            )
+            return len(ids)
 
     def update_binary_belief(
         self,
@@ -499,17 +597,261 @@ class Store:
         result["value"] = json.loads(result.pop("value_json"))
         return result
 
+    def record_goal_attempt(
+        self,
+        *,
+        agent_id: str,
+        goal_key: str,
+        kind: str,
+        subject_signature: str | None,
+        priority: float,
+        sequence: int,
+    ) -> dict[str, Any]:
+        now = time.time()
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT attempts FROM goal_stats WHERE agent_id=? AND goal_key=?",
+                (agent_id, goal_key),
+            ).fetchone()
+            if row is None:
+                db.execute(
+                    "INSERT INTO goal_stats(agent_id,goal_key,kind,subject_signature,priority,"
+                    "attempts,successes,failures,first_sequence,last_sequence,created_at,updated_at)"
+                    " VALUES(?,?,?,?,?,1,0,0,?,?,?,?)",
+                    (
+                        agent_id,
+                        goal_key,
+                        kind,
+                        subject_signature,
+                        float(priority),
+                        int(sequence),
+                        int(sequence),
+                        now,
+                        now,
+                    ),
+                )
+            else:
+                db.execute(
+                    "UPDATE goal_stats SET kind=?,subject_signature=?,priority=?,attempts=attempts+1,"
+                    "last_sequence=?,updated_at=? WHERE agent_id=? AND goal_key=?",
+                    (
+                        kind,
+                        subject_signature,
+                        float(priority),
+                        int(sequence),
+                        now,
+                        agent_id,
+                        goal_key,
+                    ),
+                )
+        return self.goal_stats(agent_id, goal_key) or {}
+
+    def record_goal_outcome(
+        self,
+        *,
+        agent_id: str,
+        goal_key: str,
+        kind: str,
+        subject_signature: str | None,
+        supported: bool,
+        sequence: int,
+    ) -> dict[str, Any]:
+        now = time.time()
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT 1 FROM goal_stats WHERE agent_id=? AND goal_key=?",
+                (agent_id, goal_key),
+            ).fetchone()
+            if row is None:
+                db.execute(
+                    "INSERT INTO goal_stats(agent_id,goal_key,kind,subject_signature,priority,"
+                    "attempts,successes,failures,first_sequence,last_sequence,created_at,updated_at)"
+                    " VALUES(?,?,?,?,0,0,?,?, ?,?,?,?)",
+                    (
+                        agent_id,
+                        goal_key,
+                        kind,
+                        subject_signature,
+                        1 if supported else 0,
+                        0 if supported else 1,
+                        int(sequence),
+                        int(sequence),
+                        now,
+                        now,
+                    ),
+                )
+            else:
+                column = "successes" if supported else "failures"
+                db.execute(
+                    f"UPDATE goal_stats SET {column}={column}+1,kind=?,subject_signature=?,"
+                    "last_sequence=?,updated_at=? WHERE agent_id=? AND goal_key=?",
+                    (
+                        kind,
+                        subject_signature,
+                        int(sequence),
+                        now,
+                        agent_id,
+                        goal_key,
+                    ),
+                )
+        return self.goal_stats(agent_id, goal_key) or {}
+
+    def goal_stats(self, agent_id: str, goal_key: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._db.execute(
+                "SELECT * FROM goal_stats WHERE agent_id=? AND goal_key=?",
+                (agent_id, goal_key),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def update_skill_evidence(
+        self,
+        *,
+        agent_id: str,
+        skill_key: str,
+        kind: str,
+        goal_kind: str,
+        target_signature: str | None,
+        steps: list[dict[str, Any]],
+        supported: bool,
+        sequence: int,
+        min_successes: int,
+        min_confidence: float,
+    ) -> dict[str, Any]:
+        now = time.time()
+        safe_steps = strip_ephemeral(steps)
+        encoded_steps = canonical_json(safe_steps)
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT * FROM skills WHERE agent_id=? AND skill_key=?",
+                (agent_id, skill_key),
+            ).fetchone()
+            if row is None:
+                successes = 1 if supported else 0
+                failures = 0 if supported else 1
+                confidence = (successes + 1) / (successes + failures + 2)
+                reusable = int(successes >= min_successes and confidence >= min_confidence)
+                db.execute(
+                    "INSERT INTO skills(agent_id,skill_key,kind,goal_kind,target_signature,steps_json,"
+                    "success_count,failure_count,confidence,reusable,first_sequence,last_sequence,created_at,updated_at)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        agent_id,
+                        skill_key,
+                        kind,
+                        goal_kind,
+                        target_signature,
+                        encoded_steps,
+                        successes,
+                        failures,
+                        confidence,
+                        reusable,
+                        int(sequence),
+                        int(sequence),
+                        now,
+                        now,
+                    ),
+                )
+            else:
+                successes = int(row["success_count"]) + (1 if supported else 0)
+                failures = int(row["failure_count"]) + (0 if supported else 1)
+                confidence = (successes + 1) / (successes + failures + 2)
+                reusable = int(successes >= min_successes and confidence >= min_confidence)
+                db.execute(
+                    "UPDATE skills SET kind=?,goal_kind=?,target_signature=?,steps_json=?,"
+                    "success_count=?,failure_count=?,confidence=?,reusable=?,last_sequence=?,updated_at=? "
+                    "WHERE agent_id=? AND skill_key=?",
+                    (
+                        kind,
+                        goal_kind,
+                        target_signature,
+                        encoded_steps,
+                        successes,
+                        failures,
+                        confidence,
+                        reusable,
+                        int(sequence),
+                        now,
+                        agent_id,
+                        skill_key,
+                    ),
+                )
+        return self.skill(agent_id, skill_key) or {}
+
+    def skill(self, agent_id: str, skill_key: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._db.execute(
+                "SELECT * FROM skills WHERE agent_id=? AND skill_key=?",
+                (agent_id, skill_key),
+            ).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["steps"] = json.loads(result.pop("steps_json"))
+        result["reusable"] = bool(result["reusable"])
+        return result
+
+    def best_reusable_skill(
+        self,
+        *,
+        agent_id: str,
+        goal_kind: str,
+        target_signature: str | None,
+    ) -> dict[str, Any] | None:
+        with self._lock:
+            if target_signature is None:
+                row = self._db.execute(
+                    "SELECT * FROM skills WHERE agent_id=? AND goal_kind=? AND reusable=1 "
+                    "AND target_signature IS NULL ORDER BY confidence DESC,success_count DESC,updated_at DESC LIMIT 1",
+                    (agent_id, goal_kind),
+                ).fetchone()
+            else:
+                row = self._db.execute(
+                    "SELECT * FROM skills WHERE agent_id=? AND goal_kind=? AND reusable=1 "
+                    "AND target_signature=? ORDER BY confidence DESC,success_count DESC,updated_at DESC LIMIT 1",
+                    (agent_id, goal_kind, target_signature),
+                ).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["steps"] = json.loads(result.pop("steps_json"))
+        result["reusable"] = bool(result["reusable"])
+        return result
+
     def summary(self, agent_id: str) -> dict[str, Any]:
         state = self.state(agent_id)
         with self._lock:
-            episodes = self._db.execute("SELECT COUNT(*) FROM episodes WHERE agent_id=?", (agent_id,)).fetchone()[0]
-            appearances = self._db.execute(
-                "SELECT COUNT(*) FROM appearance_stats WHERE agent_id=?", (agent_id,)
+            episodes = self._db.execute(
+                "SELECT COUNT(*) FROM episodes WHERE agent_id=?",
+                (agent_id,),
             ).fetchone()[0]
-            decisions = self._db.execute("SELECT COUNT(*) FROM decisions WHERE agent_id=?", (agent_id,)).fetchone()[0]
-            beliefs = self._db.execute("SELECT COUNT(*) FROM beliefs WHERE agent_id=?", (agent_id,)).fetchone()[0]
+            appearances = self._db.execute(
+                "SELECT COUNT(*) FROM appearance_stats WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
+            decisions = self._db.execute(
+                "SELECT COUNT(*) FROM decisions WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
+            beliefs = self._db.execute(
+                "SELECT COUNT(*) FROM beliefs WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
             pending = self._db.execute(
-                "SELECT COUNT(*) FROM expectations WHERE agent_id=? AND state='pending'", (agent_id,)
+                "SELECT COUNT(*) FROM expectations WHERE agent_id=? AND state='pending'",
+                (agent_id,),
+            ).fetchone()[0]
+            goals = self._db.execute(
+                "SELECT COUNT(*) FROM goal_stats WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
+            skills = self._db.execute(
+                "SELECT COUNT(*) FROM skills WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
+            reusable = self._db.execute(
+                "SELECT COUNT(*) FROM skills WHERE agent_id=? AND reusable=1",
+                (agent_id,),
             ).fetchone()[0]
         return {
             "agent_id": agent_id,
@@ -520,5 +862,8 @@ class Store:
             "decisions": int(decisions),
             "beliefs": int(beliefs),
             "pending_expectations": int(pending),
+            "goals": int(goals),
+            "skills": int(skills),
+            "reusable_skills": int(reusable),
             "schema_version": SCHEMA_VERSION,
         }

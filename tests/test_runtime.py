@@ -77,7 +77,7 @@ class FakeBridge:
 
 
 class RuntimeTests(unittest.TestCase):
-    def test_touch_outcome_becomes_evidence_based_belief(self) -> None:
+    def test_verified_outcome_updates_belief_goal_and_skill_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = Config(
                 agent_id="alua:1",
@@ -92,18 +92,33 @@ class RuntimeTests(unittest.TestCase):
                 first = runtime.step()
                 self.assertEqual(first.observations_processed, 1)
                 self.assertTrue(first.action_submitted)
+                self.assertEqual(first.goal_key, "inspect:pabc")
                 self.assertEqual(bridge.actions[0]["type"], "manipulate")
                 self.assertEqual(bridge.actions[0]["parameters"], {"verb": "touch"})
                 self.assertEqual(bridge.actions[0]["target_ref"], "t1_7")
                 self.assertEqual(store.summary("alua:1")["pending_expectations"], 1)
 
+                attempted = store.goal_stats("alua:1", "inspect:pabc")
+                self.assertEqual(attempted["attempts"], 1)
+                self.assertEqual(attempted["successes"], 0)
+
                 second = runtime.step()
                 self.assertEqual(second.outcomes_resolved, 1)
+
                 belief = store.belief("alua:1", "appearance:pabc:touch:effect")
                 self.assertIsNotNone(belief)
                 self.assertGreater(belief["confidence"], 0.5)
 
+                completed = store.goal_stats("alua:1", "inspect:pabc")
+                self.assertEqual(completed["successes"], 1)
+                self.assertEqual(completed["failures"], 0)
+
+                summary = store.summary("alua:1")
+                self.assertGreaterEqual(summary["skills"], 1)
+                self.assertEqual(summary["reusable_skills"], 0)
+
                 decision = store.decision(first.decision_id)
+                self.assertEqual(decision["goal_kind"], "inspect_novel")
                 self.assertNotIn("t1_7", decision["action_json"])
             finally:
                 store.close()

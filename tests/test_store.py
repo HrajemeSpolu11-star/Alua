@@ -214,5 +214,71 @@ class StoreTests(unittest.TestCase):
                 store.close()
 
 
+    def test_goal_outcomes_and_schema_v3_tables(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            try:
+                attempted = store.record_goal_attempt(
+                    agent_id="alua:1",
+                    goal_key="explore:open",
+                    kind="explore",
+                    subject_signature=None,
+                    priority=0.5,
+                    sequence=1,
+                )
+                self.assertEqual(attempted["attempts"], 1)
+                completed = store.record_goal_outcome(
+                    agent_id="alua:1",
+                    goal_key="explore:open",
+                    kind="explore",
+                    subject_signature=None,
+                    supported=False,
+                    sequence=2,
+                )
+                self.assertEqual(completed["failures"], 1)
+                self.assertEqual(store.summary("alua:1")["schema_version"], 3)
+                self.assertEqual(store.summary("alua:1")["goals"], 1)
+            finally:
+                store.close()
+
+    def test_v2_database_is_backed_up_and_migrated_to_v3(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy-v2.sqlite3"
+            db = sqlite3.connect(path)
+            db.executescript(
+                """
+                CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+                INSERT INTO meta(key,value) VALUES('schema_version','2');
+                CREATE TABLE decisions(
+                    decision_id TEXT PRIMARY KEY,
+                    agent_id TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    observation_sequence INTEGER NOT NULL,
+                    action_type TEXT NOT NULL,
+                    action_json TEXT NOT NULL,
+                    rationale_json TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    request_id TEXT,
+                    bridge_action_sequence INTEGER,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL
+                );
+                """
+            )
+            db.commit()
+            db.close()
+
+            store = Store(path)
+            try:
+                self.assertIsNotNone(store.last_backup_path)
+                self.assertTrue(store.last_backup_path.exists())
+                summary = store.summary("alua:1")
+                self.assertEqual(summary["schema_version"], 3)
+                self.assertIn("skills", summary)
+                self.assertIn("goals", summary)
+            finally:
+                store.close()
+
+
 if __name__ == "__main__":
     unittest.main()

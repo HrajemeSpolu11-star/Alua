@@ -10,10 +10,12 @@ from typing import Any
 from .bridge_client import BridgeClient
 from .config import Config
 from .errors import BridgeHttpError, BridgeUnavailable, ProtocolError
-from .learning import learn_from_motor_outcome
+from .goals import GoalCandidate, IntrinsicCurriculum, ReflexGoalSelector
+from .learning import learn_from_motor_outcome, motor_success
 from .memory import WorkingMemory
 from .perception import PerceptionFrame, build_frame
 from .policy import ExplorationPolicy
+from .skills import SkillLibrary
 from .store import Store
 
 
@@ -28,6 +30,8 @@ class StepResult:
     outcomes_resolved: int
     action_submitted: bool
     decision_id: str | None
+    goal_key: str | None = None
+    skill_key: str | None = None
 
 
 class Runtime:
@@ -38,16 +42,27 @@ class Runtime:
         bridge: BridgeClient | Any,
         policy: ExplorationPolicy | None = None,
         memory: WorkingMemory | None = None,
+        curriculum: IntrinsicCurriculum | None = None,
+        reflex: ReflexGoalSelector | None = None,
+        skills: SkillLibrary | None = None,
     ):
         self.config = config
         self.store = store
         self.bridge = bridge
         self.policy = policy or ExplorationPolicy()
         self.memory = memory or WorkingMemory(capacity=32)
+        self.curriculum = curriculum or IntrinsicCurriculum()
+        self.reflex = reflex or ReflexGoalSelector()
+        self.skills = skills or SkillLibrary()
         self.store.ensure_agent(config.agent_id)
 
     @staticmethod
-    def _decision_id(agent_id: str, session_id: str, sequence: int, action_payload: dict[str, Any]) -> str:
+    def _decision_id(
+        agent_id: str,
+        session_id: str,
+        sequence: int,
+        action_payload: dict[str, Any],
+    ) -> str:
         encoded = json.dumps(
             [agent_id, session_id, sequence, action_payload],
             ensure_ascii=False,
@@ -68,6 +83,8 @@ class Runtime:
             )
             if expectation is None:
                 continue
+
+            succeeded = motor_success(event)
             learn_from_motor_outcome(
                 self.store,
                 self.config.agent_id,
@@ -75,8 +92,46 @@ class Runtime:
                 event,
                 frame.sequence,
             )
+
+            goal_key = expectation.get("goal_key")
+            goal_kind = expectation.get("goal_kind")
+            if isinstance(goal_key, str) and goal_key and isinstance(goal_kind, str) and goal_kind:
+                self.store.record_goal_outcome(
+                    agent_id=self.config.agent_id,
+                    goal_key=goal_key,
+                    kind=goal_kind,
+                    subject_signature=expectation.get("target_signature"),
+                    supported=succeeded,
+                    sequence=frame.sequence,
+                )
+
+            self.skills.learn(
+                self.store,
+                self.config.agent_id,
+                expectation,
+                supported=succeeded,
+                sequence=frame.sequence,
+            )
             resolved += 1
         return resolved
+
+    def _select_goal(
+        self,
+        frame: PerceptionFrame,
+        novel_appearance_ids: set[str],
+    ) -> tuple[GoalCandidate, bool]:
+        reflex_goal = self.reflex.choose(frame, self.memory)
+        if reflex_goal is not None:
+            return reflex_goal, True
+        return (
+            self.curriculum.choose(
+                frame,
+                novel_appearance_ids,
+                self.memory,
+                lambda key: self.store.goal_stats(self.config.agent_id, key),
+            ),
+            False,
+        )
 
     def step(self) -> StepResult:
         session = self.bridge.session()
@@ -122,7 +177,19 @@ class Runtime:
         if self.store.pending_expectation_count(self.config.agent_id, session_id) > 0:
             return StepResult(session_id, changed, processed, outcomes_resolved, False, None)
 
-        intent = self.policy.choose(latest, latest_novel, self.memory)
+        goal, is_reflex = self._select_goal(latest, latest_novel)
+        skill_key: str | None = None
+
+        retrieved = None if is_reflex else self.skills.retrieve(
+            self.store,
+            self.config.agent_id,
+            goal,
+        )
+        if retrieved is not None:
+            skill_key, intent = retrieved
+        else:
+            intent = self.policy.choose(latest, goal, self.memory)
+
         action: dict[str, Any] = {
             "schema_version": 1,
             "agent_id": self.config.agent_id,
@@ -143,13 +210,20 @@ class Runtime:
         )
         action["client_action_id"] = decision_id
 
+        rationale = dict(intent.rationale)
+        if goal.reason:
+            rationale["goal_reason"] = goal.reason
+
         self.store.record_decision(
             decision_id,
             self.config.agent_id,
             session_id,
             latest.sequence,
             action,
-            intent.rationale,
+            rationale,
+            goal_key=goal.key,
+            goal_kind=goal.kind,
+            skill_key=skill_key,
         )
         response = self.bridge.submit_action(action)
         self.store.mark_decision_submitted(
@@ -157,6 +231,14 @@ class Runtime:
             response["request_id"],
             response["status"],
             response["action_sequence"],
+        )
+        self.store.record_goal_attempt(
+            agent_id=self.config.agent_id,
+            goal_key=goal.key,
+            kind=goal.kind,
+            subject_signature=goal.target_signature,
+            priority=goal.priority,
+            sequence=latest.sequence,
         )
         self.store.record_expectation(
             decision_id=decision_id,
@@ -167,8 +249,20 @@ class Runtime:
             target_signature=intent.target_signature,
             action=action,
             created_sequence=latest.sequence,
+            goal_key=goal.key,
+            goal_kind=goal.kind,
+            skill_key=skill_key,
         )
-        return StepResult(session_id, changed, processed, outcomes_resolved, True, decision_id)
+        return StepResult(
+            session_id,
+            changed,
+            processed,
+            outcomes_resolved,
+            True,
+            decision_id,
+            goal.key,
+            skill_key,
+        )
 
     def run_forever(self) -> None:
         backoff = self.config.poll_interval
