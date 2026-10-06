@@ -3,24 +3,23 @@
 ## Umístění
 
 Doporučeně:
+
     ~/alua/Alua
     ~/alua/Aluabridge
     ~/alua/games/aluaworld
-
-Kognitivní data:
     ~/alua/data/alua-1/
 
-DB nesmí být uvnitř Git repozitáře.
+Kognitivní DB nesmí být uvnitř Git repozitáře.
 
 ## Instalace
 
     pkg install python git
-    git clone <Alua repository> ~/alua/Alua
     cd ~/alua/Alua
     python -m venv .venv
     .venv/bin/pip install -e .
+    cp .env.example .env
 
-Připrav environment podle .env.example. Token musí být stejný agent token, který má pro alua:1 nakonfigurovaný AluaBridge.
+V .env nastavte agent token shodný s tokenem alua:1 v AluaBridge.
 
 ## Environment
 
@@ -31,38 +30,44 @@ Připrav environment podle .env.example. Token musí být stejný agent token, k
     ALUA_POLL_INTERVAL=0.25
     ALUA_REQUEST_TIMEOUT=2.0
 
-Token nesmí být commitnutý.
+## Pořadí procesů
 
-## Procesy
+1. AluaBridge;
+2. AluaWorld;
+3. při úplně prvním použití jako správce spustit /aw_alua_spawn;
+4. Alua AI.
 
-Na jednom telefonu běží odděleně:
-1. Luanti server s AluaWorld;
-2. AluaBridge na 127.0.0.1:8787;
-3. Alua AI.
+Body-aware Bridge adaptér nevytvoří agent session dřív, než ve Worldu existuje alua:1. Po prvním spawnu je tělo persistentní.
 
 ## Ověření
 
-Po exportu environment proměnných:
-
+    set -a
+    . ./.env
+    set +a
     .venv/bin/python -m alua doctor
     .venv/bin/python -m alua status
-    .venv/bin/python -m alua run --once
 
-doctor kontroluje DB, /health a aktivní agent session.
+## Skutečný E2E smoke test
 
-## Start
+Po spuštění Bridge a Worldu:
+
+    bash tools/e2e_smoke_termux.sh
+
+Helper provede několik kognitivních cyklů a skončí úspěchem pouze pokud:
+- existuje aktivní World session;
+- Alua přijala observation;
+- vytvořila decision;
+- z budoucího motorického vjemu vznikl belief.
+
+Počet cyklů lze změnit přes ALUA_E2E_CYCLES.
+
+## Trvalý start
 
     .venv/bin/python -m alua run
 
-Alua runtime umí čekat při dočasné nedostupnosti Bridge s omezeným backoffem. Neplatná autentizace je fatální chyba a nemá se nekonečně opakovat.
+## SQLite migrace
 
-## Backup
-
-Před budoucí DB migrací:
-- zastavit Alua proces;
-- vytvořit timestampovanou kopii DB;
-- spustit migration doctor;
-- až potom start runtime.
+Aktuální schema je v2. Při otevření schema v1 se před změnou automaticky vytvoří lokální backup. Novější neznámé schema runtime odmítne.
 
 ## Testy
 
@@ -73,7 +78,7 @@ Před budoucí DB migrací:
 V1:
 - nemá busy-loop;
 - nemá povinný LLM inference;
-- používá SQLite;
-- komunikuje jen přes localhost;
+- používá bounded WorkingMemory;
+- komunikuje pouze přes localhost;
 - neposílá data do cloudu;
 - neukládá bearer token.

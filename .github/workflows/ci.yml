@@ -17,3 +17,4 @@ jobs:
       - run: python -m compileall -q src tests tools
       - run: python -m unittest discover -s tests -v
       - run: python tools/audit_repo.py
+      - run: bash -n tools/e2e_smoke_termux.sh

@@ -1,117 +1,56 @@
 # Architektonická rozhodnutí Alua AI
 
 ## ADR-A001 – Alua je samostatný kognitivní proces
-
-Stav: přijato
-Datum: 2026-10-06
-
-Alua AI neběží jako Luanti mod. Je oddělená od AluaWorld procesu.
-
-Důvod:
-- silnější epistemická hranice;
-- vlastní lifecycle;
-- vlastní persistence;
-- možnost více nezávislých mozků;
-- svět nemusí důvěřovat kognitivnímu kódu.
+Přijato 2026-10-06. Alua neběží jako Luanti mod.
 
 ## ADR-A002 – Jediné runtime rozhraní je AluaBridge Agent API
-
-Stav: přijato
-Datum: 2026-10-06
-
-Alua nesmí přímo používat Luanti, World API, databázi AluaWorld ani interní katalogy.
+Přijato 2026-10-06. Přímý World/Luanti přístup je zakázán.
 
 ## ADR-A003 – Python pro nový runtime
-
-Stav: přijato
-Datum: 2026-10-06
-
-V1 bude Python 3.12+.
-
-Důvod:
-- kompatibilita s Termux;
-- jednoduché SQLite;
-- snadné testování;
-- stejný provozní ekosystém jako AluaBridge;
-- rychlá iterace kognitivních modulů.
+Přijato 2026-10-06. V1 používá Python 3.12+.
 
 ## ADR-A004 – SQLite vlastní kognitivní paměť
-
-Stav: přijato
-Datum: 2026-10-06
-
-Bridge SQLite není paměť Alua. Alua má vlastní verzovanou databázi.
+Přijato 2026-10-06. Bridge SQLite není paměť Alua.
 
 ## ADR-A005 – Jeden agent na jeden proces ve V1
-
-Stav: přijato
-Datum: 2026-10-06
-
-V1 nezavádí supervisor ani sdílený multi-agent runtime. Každá Alua má vlastní proces, token a DB.
+Přijato 2026-10-06. Každá Alua má vlastní proces, token a DB.
 
 ## ADR-A006 – Žádný povinný LLM
-
-Stav: přijato
-Datum: 2026-10-06
-
-Základní autonomní chování musí fungovat bez externího LLM nebo cloud AI.
+Přijato 2026-10-06. Základní autonomie musí fungovat bez cloud LLM.
 
 ## ADR-A007 – Beliefs jsou evidence-based a opravitelné
-
-Stav: přijato
-Datum: 2026-10-06
-
-Empirická znalost nesmí být jednorázově zapsána jako absolutní fakt bez provenance.
+Přijato 2026-10-06. Empirická znalost není absolutní fakt bez evidence.
 
 ## ADR-A008 – target_ref není dlouhodobá identita
-
-Stav: přijato
-Datum: 2026-10-06
-
-target_ref patří pouze do krátkodobého kontextu a po změně session nebo expiraci se zahazuje.
+Přijato 2026-10-06. target_ref patří pouze do krátkodobého kontextu.
 
 ## ADR-A009 – ACK není outcome
-
-Stav: přijato
-Datum: 2026-10-06
-
-Transportní přijetí akce nesmí přímo měnit world belief jako potvrzený fyzický výsledek.
+Přijato 2026-10-06. Transportní přijetí akce nesmí přímo změnit world belief.
 
 ## ADR-A010 – Starý Lua companion se zatím zachovává
-
-Stav: přijato
-Datum: 2026-10-06
-
-Původní Luanti prototyp se nemaže v první migrační změně. Nový Python runtime na něm ale nesmí záviset.
+Přijato 2026-10-06. Historický prototyp zůstává, nový runtime na něm nezávisí.
 
 ## ADR-A011 – agent_id je dlouhodobá identita Alua
+Přijato 2026-10-06. Restart procesu, Bridge ani Worldu sám nevytváří novou osobnost.
 
-Stav: přijato
-Datum: 2026-10-06
+## ADR-A012 – změna session invaliduje ephemeral stav
+Přijato 2026-10-06. Nový session_id resetuje krátkodobý World kontext, ne dlouhodobé epizody a beliefs.
 
-Restart procesu, Bridge ani Worldu nesmí sám o sobě vytvořit novou osobnost.
+## ADR-A013 – aktivní explorace začíná nedestruktivně
+Přijato 2026-10-06.
 
-agent_id je dlouhodobá identita kognitivního agenta. Přesná biologická semantika smrti těla a případného nového těla bude rozhodnuta samostatně.
+Po definici autoritativního move/look kontraktu smí Alua autonomně použít move a look. Manipulace V1 používá pouze touch. Pickup, push a break čekají na naučený risk/utility model.
 
-## ADR-A012 – změna session invaliduje ephemeral stav, ne automaticky dlouhodobou zkušenost
+## ADR-A014 – outcome se koreluje Bridge action sequence
+Přijato 2026-10-06.
 
-Stav: přijato
-Datum: 2026-10-06
+Decision ukládá Bridge action_sequence. World ji vrací pouze jako omezený motorický source_sequence. Belief update vzniká až po budoucí observation, ne z HTTP ACK.
 
-Nový session_id:
-- zahazuje target_ref;
-- ruší krátkodobé world-specific plány;
-- resetuje observation cursor;
-- nesmí automaticky vymazat epizodickou paměť a beliefs stejného agent_id.
+## ADR-A015 – kognitivní SQLite schema v2 migruje se zálohou
+Přijato 2026-10-06.
 
-Před aktivní manipulací musí runtime umět reconciliovat pending/planned decisions ze staré session.
+Před upgrade schema v1 se vytvoří SQLite backup. Session transition invaliduje nedokončené World-specific decisions a expectations, ale nemaže epizody ani beliefs.
 
 ## Historická rozhodnutí
 
-Původní ADR z 2026-09-24 jsou zachována v Git historii. Část principů zůstává platná:
-- modularita;
-- dokumentace jako součást změny;
-- zákaz vševědoucnosti;
-- čeština interní dokumentace.
-
-Jejich původní předpoklad, že Alua běží uvnitř Luanti, je nahrazen ADR-A001 a ADR-A002.
+Původní ADR z 2026-09-24 jsou zachována v Git historii. Jejich předpoklad, že Alua běží uvnitř Luanti, je nahrazen ADR-A001 a ADR-A002.

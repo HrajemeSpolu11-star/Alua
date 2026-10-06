@@ -3,3 +3,4 @@ set -euo pipefail
 python -m compileall -q src tests tools
 python -m unittest discover -s tests -v
 python tools/audit_repo.py
+bash -n tools/e2e_smoke_termux.sh

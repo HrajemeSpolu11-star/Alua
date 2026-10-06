@@ -3,152 +3,106 @@
 Roadmapa určuje pořadí závislostí, ne kalendář.
 
 ## Fáze A – dokumentační a kontraktní základ
-
-Stav: hotovo 2026-10-06.
-
-- role Alua / Bridge / World;
-- Bridge Agent API kontrakt;
-- kognitivní architektura;
-- memory model;
-- belief boundary;
-- security/data policy;
-- identity/session/recovery contract;
-- testing plan;
-- provozní plán pro Termux;
-- pravidla dalších chatů;
-- projektová paměť;
-- datovaný audit skutečné implementace.
+Stav: hotovo.
 
 ## Fáze B – samostatný runtime
-
-Stav: implementováno / čeká na skutečný end-to-end test.
+Stav: implementováno.
 
 Hotovo:
-- Python package;
-- config z environmentu;
-- CLI;
-- SQLite schema;
+- Python runtime a CLI;
 - BridgeClient;
-- čtení session;
-- polling observations;
-- perzistence last processed sequence;
-- deterministické client_action_id;
-- idempotentně opakovatelný ActionRequest;
-- graceful KeyboardInterrupt;
-- reconnect/backoff pro dočasnou nedostupnost;
-- doctor/status/run;
-- unit testy;
-- contract test HTTP klienta;
-- CI;
-- statický audit hranic.
+- SQLite schema v2;
+- migrace v1 -> v2 s backupem;
+- idempotentní ActionRequest;
+- session recovery;
+- testy a CI.
 
 Zbývá:
-- ověřit proti skutečně běžícímu AluaBridge;
-- dlouhodobý restart test na telefonu;
-- reconciliation decisions při změně session;
-- migrační framework před schema v2.
+- dlouhodobý restart test na skutečném telefonu.
 
 ## Fáze C – perception + working memory
-
-Stav: částečně implementováno.
+Stav: implementovaný základ.
 
 Hotovo:
-- strict observation validation;
-- druhá rekurzivní world-truth kontrola;
+- strict perception boundary;
 - PerceptionFrame;
-- oddělení persistentní části a ephemeral target_ref;
-- appearance_id familiarity statistics.
+- ephemeral target association;
+- WorkingMemory max 32 frame;
+- motor events;
+- appearance novelty.
 
 Zbývá:
-- plná bounded working memory;
-- novelty tracking přes více modalit;
-- časové události a sensory gaps;
-- aktivní target lifecycle;
-- explicitní uncertainty representation;
+- více-modalitní novelty;
+- sensory gaps;
+- obecnější uncertainty;
 - potvrdit stabilitu appearance_id přes session nebo zavést signature epoch.
 
 ## Fáze D – episodic memory + beliefs
-
-Stav: základ epizod implementován.
+Stav: první evidence-based vrstva implementována.
 
 Hotovo:
-- dlouhodobá epizoda očištěná od target_ref;
-- session + simulation time + observation sequence;
-- appearance evidence.
+- epizody;
+- appearance evidence;
+- expectations;
+- belief store;
+- support/contradiction;
+- confidence;
+- action -> motor effect learning;
+- appearance + touch -> effect learning.
 
 Zbývá:
-- belief store;
-- confidence;
-- contradiction handling;
+- explicitní evidence links;
 - decay;
-- evidence links;
-- learned transition statistics.
+- obecnější transition model a generalizace.
 
 ## Fáze E – první autonomní rozhodování
-
-Stav: bootstrap pouze.
+Stav: bezpečná embodied explorace.
 
 Hotovo:
-- decision persistence;
-- rationale;
-- bezpečná wait policy;
-- ActionRequest přes Bridge.
+- cautious move;
+- relative look;
+- damage avoidance;
+- obstacle scan;
+- safe touch novelty;
+- pending expectation gate;
+- outcome attribution.
 
 Zbývá:
-- exploration policy;
-- need inputs;
-- goal candidates;
-- utility scoring;
-- bounded planner;
-- pending expectations;
-- outcome attribution;
-- aktivní move/look/interact/manipulate po dokončení body kontraktu.
+- fyzické needs z metabolismu;
+- goal selection;
+- utility/risk learning;
+- bounded multi-step planner;
+- potom autonomní pickup/push/break.
 
 ## Fáze F – end-to-end AluaWorld
 
-- jedno persistentní tělo;
-- Bridge V1;
-- Alua runtime;
-- dlouhodobý test;
-- restarty všech tří komponent;
-- žádný přímý Luanti přístup;
-- replay rozhodnutí;
-- měření CPU/RAM/DB růstu.
+Technické části existují:
+- persistentní tělo alua:1 v AluaWorld;
+- body-aware AluaBridge adapter;
+- Alua embodied runtime;
+- E2E smoke helper.
+
+Zbývá:
+- provést smoke test na skutečném Termux/Luanti runtime;
+- restartovat jednotlivě AI, Bridge a World a ověřit recovery;
+- dlouhodobě měřit CPU/RAM/DB růst.
 
 ## Fáze G – učení dovedností
 
 - procedurální memory;
 - vícekrokové postupy;
 - přeplánování;
-- generalizace podobných situací;
-- risk learning;
-- utility learning.
+- generalizace;
+- risk a utility learning.
 
 ## Fáze H – jazyk a sociální chování
 
-Až po stabilní neverbální kognici:
-- světový komunikační kanál;
-- učení symbolů;
-- předávání informací mezi Alua;
-- důvěra a provenance sdělení;
-- žádná telepatická společná DB.
+Až po stabilní neverbální kognici.
 
 ## Fáze I – populace
 
-- více procesů/agentů;
-- supervisor;
-- oddělené DB;
-- výkonové budgety;
-- dlouhodobé experimenty;
-- reprodukce až podle samostatného biology kontraktu.
+Více samostatných agentů, oddělené DB, supervisor a reprodukce až podle samostatného biology kontraktu.
 
-## Co se nesmí označit za hotové
+## Definice hotovo
 
-Pouhá existence třídy nebo tabulky nestačí.
-
-Každá fáze vyžaduje:
-- runtime chování;
-- persistenci, pokud ji potřebuje;
-- automatický test;
-- pozorovatelný výsledek;
-- dokumentaci.
+Pouhá existence třídy nebo tabulky nestačí. Fáze vyžaduje runtime chování, test, persistenci tam kde ji potřebuje, pozorovatelný následek a aktuální dokumentaci.

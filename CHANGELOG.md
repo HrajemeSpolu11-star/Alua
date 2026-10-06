@@ -2,66 +2,59 @@
 
 ## Nezveřejněno
 
+### 2026-10-06 – embodied learning V1
+
+- SQLite kognitivní schema zvýšeno na v2;
+- před migrací schema v1 se automaticky vytváří lokální SQLite backup;
+- přidány expectations, beliefs a bridge_action_sequence;
+- změna World session invaliduje staré pending/planned world akce a expectations;
+- přidána bounded WorkingMemory s kapacitou 32 frame;
+- target_ref vazby existují pouze krátkodobě v RAM;
+- motorický sensory channel koreluje World výsledek s Bridge action sequence;
+- belief update vzniká až budoucím motorickým vjemem, nikoli HTTP ACK;
+- beliefs mají support_count, contradiction_count a confidence;
+- ExplorationPolicy používá Worldem definované move/look a pouze nedestruktivní manipulate/touch;
+- damage signal vyvolá ústup, blízká překážka rozhlédnutí a volný prostor opatrný pohyb;
+- další aktivní akce čeká na vyřešení, invalidaci nebo expiraci předchozí expectation;
+- testy pokrývají migraci, backup, session invalidaci, working memory, policy, target_ref sanitizaci a learning;
+- přidán tools/e2e_smoke_termux.sh pro skutečný tříprocesový smoke test.
+
 ### 2026-10-06 – audit dokumentace a recovery kontrakt
 
 - proveden audit skutečné implementace proti dokumentované architektuře;
-- přidán docs/AUDIT_2026-10-06.md s ověřenými invarianty, riziky a prioritami;
+- přidán docs/AUDIT_2026-10-06.md;
 - přidán docs/IDENTITY_SESSION_RECOVERY.md;
 - přesně oddělen agent_id, session_id, observation sequence, decision_id, request_id a target_ref;
-- zdokumentovány restarty Alua/Bridge/World, timeouty, 401/403, 409 a 429;
-- zapsána podmínka, že aktivní decisions ze staré session musí být před budoucí manipulací explicitně reconciliovány;
-- zaznamenáno otevřené riziko stability appearance_id přes session.
+- zdokumentovány restarty a transportní failure modes.
 
 ### 2026-10-06 – první samostatný Alua AI runtime
 
-Implementováno:
 - Python 3.12+ package src/alua;
 - bezpečná localhost konfigurace;
 - AluaBridge Agent API klient;
-- validace session a observations proti schema_version 1;
+- schema validation;
 - vlastní SQLite persistence;
-- očištění target_ref před dlouhodobým uložením;
+- target_ref odstraněn z dlouhodobého uložení;
 - epizodická evidence a appearance statistiky;
 - session transition;
 - deterministické client_action_id;
-- první bezpečná bootstrap policy;
-- runtime step a dlouhodobá smyčka s backoffem;
+- první bezpečná wait policy;
 - CLI doctor/status/run;
-- unit a contract testy;
-- statický boundary audit;
-- GitHub CI.
-
-Po prvním CI běhu byl zpřesněn boundary audit: čisté parsování URL přes urllib.parse je povolené, zatímco skutečný síťový přístup zůstává mimo bridge_client.py zakázaný. Všech 11 runtime testů prošlo už v prvním běhu.
-
-Bootstrap policy záměrně používá jen wait. Aktivní move/look/manipulate se zapne až po přesném end-to-end kontraktu persistentního AI těla v AluaWorld; nechceme vymýšlet význam parametrů pohybu uvnitř mozku.
+- testy, boundary audit a GitHub CI.
 
 ### 2026-10-06 – přechod na samostatnou Alua AI
 
-Architektura:
-- Alua je nově definována jako samostatný kognitivní proces mimo Luanti;
-- jediným runtime rozhraním ke světu je AluaBridge Agent API;
-- AluaWorld vlastní fyziku, tělo, smyslový původ signálu a následky akcí;
-- AluaBridge vlastní transport, session, bounded fronty, target_ref, lease a ACK;
-- Alua vlastní paměť, přesvědčení, cíle, plánování, rozhodování a učení;
-- starý Lua companion je označen jako historický prototyp, ne cílový mozek.
-
-Dokumentace:
-- založen dokumentační standard po vzoru AluaWorld;
-- přidána projektová paměť pro další chaty;
-- přidán přesný Bridge kontrakt;
-- přidána cílová kognitivní architektura;
-- popsán model vnímání, přesvědčení, paměti a učení;
-- přidána pravidla bezpečnosti, testování, provozu a budoucí práce;
-- aktualizována roadmapa a architektonická rozhodnutí.
+- Alua oddělena od Luanti do samostatného kognitivního procesu;
+- jediným runtime rozhraním je AluaBridge Agent API;
+- starý Lua companion označen jako historický prototyp;
+- založena dokumentace po vzoru AluaWorld.
 
 ## 0.2.0 – 2026-09-24
 
-- trvalý Luanti companion navázaný na vlastníka;
-- follow, stay a recall;
-- jednoduchá paměť pozice vlastníka;
+- Luanti companion follow/stay/recall;
+- jednoduchá paměť;
 - diagnostický scan;
-- modulární Lua základ: registry, events, verzovaný state;
-- dokumentace původní perception boundary.
+- modulární Lua základ.
 
 ## 0.1.0 – 2026-09-24
 

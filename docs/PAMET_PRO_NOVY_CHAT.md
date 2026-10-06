@@ -9,113 +9,94 @@ Alua je samostatný mozek autonomního agenta pro AluaWorld.
 Tři repozitáře:
 - AluaWorld = fyzický svět, tělo, smysly, fyzika a následky;
 - AluaBridge = bezpečný most a transport;
-- Alua = kognice, paměť, cíle, plánování a učení.
+- Alua = kognice, paměť, beliefs, rozhodování a učení.
 
-## Kritická změna směru
+## Aktuální architektura
 
-Původní Alua z 2026-09-24 byla Luanti companion mod s npc.lua, commands.lua a core Lua základem.
+Původní Lua companion je historický prototyp.
 
-Od 2026-10-06:
-- nový mozek není Luanti mod;
+Aktuální mozek:
+- není Luanti mod;
 - neběží uvnitř World procesu;
-- nevolá core.*;
 - je samostatná Python aplikace;
-- jediný runtime vstup/výstup je AluaBridge Agent API.
+- používá pouze AluaBridge Agent API.
 
-Starý Lua prototyp se zatím nemaže, protože je součást historie a může sloužit jako reference.
-
-## Stav nové implementace
+## Stav Alua
 
 Existuje:
-- pyproject.toml;
-- src/alua Python package;
-- Config s vynuceným loopback Bridge URL;
+- Python runtime;
 - BridgeClient;
-- schema validation;
-- PerceptionFrame;
-- SQLite Store;
-- session transitions;
-- epizody bez target_ref;
-- appearance familiarity;
-- decision persistence;
-- bootstrap wait policy;
-- Runtime.step a run_forever;
-- CLI doctor/status/run;
-- testy;
-- boundary audit;
-- GitHub CI.
+- strict schema/perception boundary;
+- SQLite schema v2;
+- automatický backup při migraci v1 -> v2;
+- episodes, appearance_stats, decisions, expectations, beliefs a session_events;
+- WorkingMemory max 32 frame;
+- session recovery;
+- motor outcome attribution;
+- evidence-based confidence;
+- aktivní ExplorationPolicy;
+- testy a CI;
+- E2E Termux smoke helper.
 
-Bootstrap policy zatím neposílá move/look/manipulate. Je to záměr: AluaWorld ještě nemá zdokumentované a end-to-end ověřené parametry persistentního AI body adapteru. Mozek nesmí parametry těla vymyslet sám.
+## Embodied V1
 
-## Poslední ověřený audit
+Cyklus:
+1. observation;
+2. WorkingMemory;
+3. přiřazení motorického source_sequence k dřívější akci;
+4. belief update až z budoucího smyslového následku;
+5. další bezpečná akce pouze bez pending expectation.
 
-Dne 2026-10-06 byl proti commitu ab0d119 ověřen skutečný runtime a zelené GitHub CI.
+Policy:
+- damage -> ústup;
+- nový blízký cíl -> touch;
+- blízká překážka -> look;
+- periodický scan;
+- jinak pomalý move.
 
-Audit je v:
-- docs/AUDIT_2026-10-06.md
-
-Přesná pravidla identity, session a restartů:
-- docs/IDENTITY_SESSION_RECOVERY.md
-
-Hlavní otevřené technické body:
-- skutečný end-to-end běh ještě chybí;
-- před schema v2 je nutný migrační framework;
-- před aktivními akcemi je nutná reconciliation decisions při změně session;
-- belief store a outcome attribution ještě nejsou implementované;
-- stabilita appearance_id napříč session musí být smluvně potvrzena.
-
-## Stav AluaBridge
-
-Bridge V1 existuje a má:
-- localhost HTTP;
-- per-agent token;
-- session;
-- observations;
-- actions;
-- target_ref;
-- idempotentní client_action_id;
-- lease/ACK;
-- SQLite transport state;
-- bezpečnostní limity.
-
-Agent endpointy:
-- GET /v1/agent/session
-- GET /v1/agent/observations
-- POST /v1/agent/actions
-
-## Nejvyšší pravidlo
-
-Alua nesmí znát world truth, kterou sama nevnímala nebo neodvodila.
+Automatický pickup/push/break je vypnutý.
 
 ## target_ref
 
-Je krátkodobý opaque handle.
-V runtime PerceptionFrame může krátce existovat v RAM.
-Do persistentního percept_json se odstraňuje.
+target_ref:
+- je krátkodobý opaque handle;
+- existuje pouze v aktuálním RAM PerceptionFrame a odchozím ActionRequest;
+- není dlouhodobá identita;
+- Store jej odstraňuje z epizod, decisions i expectations.
 
-## Action outcome
+## Outcome
 
-Přijetí akce nebo ACK není fyzický úspěch.
-Výsledek se bude učit až z budoucí observation.
+Bridge ACK není fyzický výsledek.
 
-## Technologie V1
+World action_result je sanitizován do motorického sensory eventu se source_sequence, success_signal, feedback_signal, effort_signal a age_fraction. Teprve tento budoucí vjem může změnit belief.
 
-- Python 3.12+;
-- standard library;
-- SQLite;
-- jeden agent na jeden proces;
-- jeden DB soubor na agenta;
-- žádný povinný externí LLM;
-- důraz na replay, provenance a explainability.
+## Stav Worldu a Bridge
+
+AluaWorld:
+- má persistentní LuaEntity tělo alua:1;
+- tělo má kolizi, gravitaci, move/look kontrakt, omezenou sílu a motor feedback;
+- fyzická manipulace ověřuje skutečný dosah těla.
+
+AluaBridge:
+- má World/Agent API;
+- body-aware aw_bridge adaptér;
+- session vzniká jen pro skutečně aktivní tělo;
+- má instalační helper pro synchronizaci adaptéru do AluaWorld.
+
+## E2E smoke
+
+Po spuštění Worldu a Bridge:
+
+    bash tools/e2e_smoke_termux.sh
+
+Úspěch vyžaduje session, observation epizodu, decision a learned belief.
 
 ## Bezprostřední další práce
 
-1. ověřit skutečný AluaBridge + Alua runtime;
-2. v AluaWorld vytvořit persistentní AI body adapter s přesným move/look kontraktem;
-3. udělat restart/recovery E2E scénář;
-4. doplnit SQLite migrace;
-5. bounded working memory;
-6. belief store + evidence;
-7. pending expectations a outcome attribution;
-8. aktivní exploraci;
-9. až potom planner.
+1. skutečný E2E smoke na telefonu;
+2. restart/recovery test všech tří procesů;
+3. metabolismus/needs ve Worldu;
+4. goal/utility vrstva v Alua;
+5. risk learning;
+6. multi-step planner;
+7. až potom destruktivnější autonomní manipulace.

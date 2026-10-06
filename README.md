@@ -2,49 +2,52 @@
 
 Alua je samostatný kognitivní systém pro autonomní agenty žijící v AluaWorld.
 
-Od 2026-10-06 je hlavní architektura projektu změněna: Alua už není Luanti mod a nesmí být přímo napojená na engine. AluaWorld je autoritativní fyzický svět, AluaBridge je bezpečná transportní a epistemická hranice a tento repozitář vlastní pouze kognici.
-
-Tok systému:
+Architektura má tři autority:
 
     AluaWorld -> AluaBridge -> Alua AI
     Alua AI   -> AluaBridge -> AluaWorld
 
-Alua AI smí přijímat pouze vjemy svého těla, vytvářet si vlastní paměť a přesvědčení a žádat o primitivní akce. Nesmí číst mapu, technické názvy nodů, materiály, biomy, recepty, interní objekty ani administrátorská data.
+- AluaWorld vlastní fyzický svět, tělo, smysly, fyziku a skutečné následky akcí.
+- AluaBridge vlastní bezpečný localhost transport, session, bounded fronty, target_ref, lease a ACK.
+- Alua vlastní kognici: pracovní a dlouhodobou paměť, beliefs, rozhodování a učení.
+
+Alua nesmí číst mapu, interní názvy nodů, materiály, biomy, recepty, ObjectRef ani administrátorská data. Význam věcí si vytváří pouze ze zkušenosti.
 
 ## Aktuální stav
 
-Implementováno v nové Python architektuře:
-- samostatný Python 3.12+ package;
-- pouze localhost konfigurace AluaBridge;
+Implementováno:
+- samostatný Python 3.12+ runtime;
+- loopback-only AluaBridge klient;
 - per-agent token pouze z prostředí;
-- Agent API klient pro health, session, observations a actions;
-- striktní validace schema_version 1;
-- druhá obrana proti world-truth klíčům na straně Alua;
-- vlastní SQLite kognitivní persistence;
-- session transition s resetem krátkodobého observation cursoru;
-- dlouhodobé epizody bez ukládání target_ref;
-- statistika známých appearance_id bez přiřazení významu;
-- bootstrap kognitivní cyklus observation -> memory -> decision -> ActionRequest;
-- konzervativní první policy používající pouze wait;
-- deterministické client_action_id pro idempotentní retry;
+- striktní schema_version 1 validace a druhá world-truth obrana;
+- SQLite kognitivní schema v2;
+- automatická záloha existující DB před migrací v1 -> v2;
+- epizodická paměť bez target_ref;
+- bounded WorkingMemory posledních 32 frame v RAM;
+- krátkodobé vazby target_ref <-> appearance_id pouze v RAM;
+- decisions, expectations a beliefs;
+- session recovery s invalidací starých pending world akcí;
+- motorický outcome attribution podle Bridge action sequence;
+- evidence-based confidence ze support/contradiction;
+- bezpečná autonomní ExplorationPolicy;
+- move a look podle kontraktu, který vlastní AluaWorld;
+- nedestruktivní touch blízkého neznámého cíle;
+- ústup při damage signálu;
 - CLI doctor, status a run;
-- automatické unit/contract testy;
-- statický audit hranic;
-- GitHub CI.
+- unit/contract testy a GitHub CI;
+- Termux E2E smoke helper.
 
-Dokumentační audit 2026-10-06 potvrdil, že výše uvedené hranice odpovídají skutečnému kódu. Zároveň eviduje otevřené blokery před plnou autonomií.
+AluaWorld už obsahuje persistentní fyzické tělo alua:1 a motorický sensory channel. AluaBridge má body-aware Luanti adaptér.
 
-Nehotovo:
-- plnohodnotná working memory;
-- evidence-based belief store;
-- needs a goals;
-- aktivní explorace move/look/manipulate;
-- outcome attribution z budoucích observations;
-- planner;
-- učení dovedností;
-- end-to-end test se skutečným persistentním AI tělem v AluaWorld.
+Záměrně zatím není autonomně zapnuto:
+- pickup;
+- push;
+- break_object;
+- více-krokový planner;
+- fyzické needs/metabolismus;
+- sociální chování.
 
-Starý Lua kód zůstává v repozitáři jako historický funkční prototyp. Nesmí se dále rozšiřovat jako hlavní mozek.
+World tyto fyzické manipulace může umět, ale mozek je nezačne používat bez naučeného risk/utility modelu.
 
 ## Rychlý start
 
@@ -52,26 +55,30 @@ Starý Lua kód zůstává v repozitáři jako historický funkční prototyp. N
     .venv/bin/pip install -e .
     cp .env.example .env
 
-Nastav environment proměnné z .env a potom:
+Po nastavení environment proměnných:
 
     .venv/bin/python -m alua doctor
     .venv/bin/python -m alua status
-    .venv/bin/python -m alua run --once
     .venv/bin/python -m alua run
 
-Podrobnosti jsou v docs/OPERATIONS_TERMUX.md.
+Pro skutečný lokální test celého řetězce:
+
+    bash tools/e2e_smoke_termux.sh
+
+Smoke test vyžaduje aktivní session, observations, alespoň jedno rozhodnutí a alespoň jeden belief vzniklý z pozdějšího sensory outcome.
 
 ## Neměnné hranice
 
-1. Alua AI nemá přímou závislost na Luanti.
+1. Alua nemá přímou závislost na Luanti.
 2. Jediné runtime spojení se světem vede přes Agent API AluaBridge.
 3. Bridge nevlastní kognici a Alua nevlastní fyziku světa.
 4. Význam neznámých věcí vzniká učením, ne převodem technických ID.
 5. target_ref je krátkodobý handle, ne identita objektu.
-6. ACK akce není fyzický výsledek; následek se poznává až z budoucích vjemů.
-7. Kognitivní paměť musí přežít restart AI a nesmí být uložená v Bridge.
-8. Každé budoucí naučené tvrzení musí mít evidenci, confidence a možnost opravy.
-9. Zásadní změna není hotová bez testu a dokumentace.
+6. ACK akce není fyzický výsledek.
+7. Fyzický outcome se učí až z budoucí observation.
+8. Kognitivní paměť musí přežít restart AI.
+9. Empirický belief musí být opravitelný další zkušeností.
+10. Zásadní změna není hotová bez testu a dokumentace.
 
 ## Dokumentace
 
@@ -86,6 +93,7 @@ Dále:
 - docs/PERCEPTION_AND_BELIEFS.md
 - docs/MEMORY_MODEL.md
 - docs/LEARNING_AND_DECISION.md
+- docs/EMBODIED_LEARNING_V1.md
 - docs/REPOSITORY_BOUNDARIES.md
 - docs/SECURITY_AND_DATA_POLICY.md
 - docs/ROADMAP.md
@@ -99,7 +107,7 @@ Dále:
 
 ## Historický prototyp
 
-Soubory init.lua, npc.lua, commands.lua a core/ pocházejí z období, kdy byla Alua navržena jako Luanti companion mod. Jsou důležité jako historie a referenční prototyp, ale nejsou cílovou architekturou nové Alua AI.
+Soubory init.lua, npc.lua, commands.lua a core/ pocházejí z období, kdy byla Alua Luanti companion mod. Zůstávají jako historie, nový Python runtime na nich nezávisí.
 
 ## Licence
 
