@@ -21,6 +21,36 @@ class ActionIntent:
 class ExplorationPolicy:
     """Maps an already selected safe goal to one primitive World action."""
 
+    @staticmethod
+    def _available_hand(frame: PerceptionFrame, capability: str) -> str | None:
+        def signal(value: Any) -> float:
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                return float(value)
+            return 0.0
+
+        channels = frame.persistent.get("channels")
+        if not isinstance(channels, dict):
+            return None
+        body_schema = channels.get("body_schema")
+        if not isinstance(body_schema, dict):
+            return None
+        effectors = body_schema.get("effectors")
+        if not isinstance(effectors, dict):
+            return None
+        signal_name = capability + "_signal"
+        for name in ("hand_right", "hand_left"):
+            state = effectors.get(name)
+            if not isinstance(state, dict):
+                continue
+            if signal(state.get("present_signal")) < 0.5:
+                continue
+            if signal(state.get(signal_name)) < 0.5:
+                continue
+            if signal(state.get("occupied_signal")) >= 0.5:
+                continue
+            return name
+        return None
+
     def choose(
         self,
         frame: PerceptionFrame,
@@ -54,9 +84,13 @@ class ExplorationPolicy:
             )
 
         if goal.kind == "inspect_object" and goal.target_ref:
+            effector = self._available_hand(frame, "touch")
+            parameters = {"verb": "touch"}
+            if effector:
+                parameters["effector"] = effector
             return ActionIntent(
                 action_type="manipulate",
-                parameters={"verb": "touch"},
+                parameters=parameters,
                 duration=None,
                 target_ref=goal.target_ref,
                 target_signature=goal.target_signature,
@@ -64,6 +98,7 @@ class ExplorationPolicy:
                     **common,
                     "policy": "safe_touch_novelty",
                     "appearance_id": goal.target_signature,
+                    "effector": effector,
                 },
             )
 

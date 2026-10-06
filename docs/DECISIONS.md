@@ -51,6 +51,12 @@ Přijato 2026-10-06.
 
 Před upgrade schema v1 se vytvoří SQLite backup. Session transition invaliduje nedokončené World-specific decisions a expectations, ale nemaže epizody ani beliefs.
 
+## ADR-A016 – Znalost vlastních částí těla není World truth cheat
+
+Přijato 2026-10-06.
+
+Alua může z `body_schema` znát vlastní hlavu, trup, ruce a chodidla a vybírat dostupný efektor. Nesmí z toho odvozovat význam externích objektů. Ruku vybírá kognice, fyzickou platnost a následek vždy ověřuje World, Bridge pouze přenáší parametr.
+
 ## Historická rozhodnutí
 
 Původní ADR z 2026-09-24 jsou zachována v Git historii. Jejich předpoklad, že Alua běží uvnitř Luanti, je nahrazen ADR-A001 a ADR-A002.

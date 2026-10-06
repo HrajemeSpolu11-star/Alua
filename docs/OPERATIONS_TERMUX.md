@@ -39,6 +39,8 @@ V .env nastavte agent token shodný s tokenem alua:1 v AluaBridge.
 
 Body-aware Bridge adaptér nevytvoří agent session dřív, než ve Worldu existuje alua:1. Po prvním spawnu je tělo persistentní.
 
+Aktualizace 2026-10-06: bod 3 už není ruční krok. První připojený tester vytvoří chybějící `alua:1` automaticky. Samostatný proces Alua se tím ale nespustí; stále je nutné provést bod 4. V panelu má být následně `tělo aktivní`, `Bridge session aktivní` a `mozek připojen`.
+
 ## Ověření
 
     set -a
@@ -67,7 +69,7 @@ Počet cyklů lze změnit přes ALUA_E2E_CYCLES.
 
 ## SQLite migrace
 
-Aktuální schema je v2. Při otevření schema v1 se před změnou automaticky vytvoří lokální backup. Novější neznámé schema runtime odmítne.
+Historický text této fáze uváděl schema v2. Aktuální kognitivní schema je v3; migrace v1 i v2 před změnou vytváří lokální backup. Novější neznámé schema runtime odmítne.
 
 ## Testy
 

@@ -2,6 +2,16 @@
 
 ## Nezveřejněno
 
+### 2026-10-06 – vnímání vlastního těla a volba ruky
+
+- Alua umí číst bezpečný observation kanál `body_schema` bez importu World katalogů;
+- ExplorationPolicy vybírá pro `touch` skutečně dostupnou a volnou `hand_right` nebo `hand_left`;
+- vybraný efektor se ukládá do vysvětlitelné rationale a odesílá v `parameters.effector`;
+- obsazená pravá ruka způsobí výběr levé ruky;
+- při starším observation bez body schema zůstává kompatibilní action bez explicitního efektoru;
+- úspěch ruky se stále neučí z ACK, ale až z budoucího motorického/tělesného vjemu;
+- doplněny policy testy a dokumentace.
+
 ### 2026-10-06 – oprava priority ověřování nejistého objektu
 
 - opraven konflikt intrinsic curriculum, kdy `scan_obstacle` přebíjel `inspect_object` u známého objektu s nedostatečnou evidencí;

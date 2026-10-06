@@ -8,7 +8,7 @@ from alua.perception import build_frame
 from alua.policy import ExplorationPolicy
 
 
-def frame(sequence: int = 1, damage: float = 0.0):
+def frame(sequence: int = 1, damage: float = 0.0, right_occupied: float = 0.0):
     return build_frame({
         "schema_version": 1,
         "agent_id": "alua:1",
@@ -17,6 +17,23 @@ def frame(sequence: int = 1, damage: float = 0.0):
         "channels": {
             "vision": {"rays": [{"distance_fraction": 1.0, "empty": True}]},
             "contact": {"damage_signal": damage},
+            "body_schema": {
+                "schema_version": 1,
+                "effectors": {
+                    "hand_right": {
+                        "present_signal": 1.0,
+                        "touch_signal": 1.0,
+                        "grasp_signal": 1.0,
+                        "occupied_signal": right_occupied,
+                    },
+                    "hand_left": {
+                        "present_signal": 1.0,
+                        "touch_signal": 1.0,
+                        "grasp_signal": 1.0,
+                        "occupied_signal": 0.0,
+                    },
+                },
+            },
         },
     })
 
@@ -35,8 +52,22 @@ class PolicyTests(unittest.TestCase):
         )
         action = ExplorationPolicy().choose(current, goal, memory)
         self.assertEqual(action.action_type, "manipulate")
-        self.assertEqual(action.parameters, {"verb": "touch"})
+        self.assertEqual(action.parameters, {"verb": "touch", "effector": "hand_right"})
         self.assertEqual(action.target_ref, "t1_7")
+
+    def test_inspect_uses_other_hand_when_right_hand_is_occupied(self) -> None:
+        current = frame(right_occupied=1.0)
+        memory = WorkingMemory()
+        memory.add(current)
+        goal = GoalCandidate(
+            key="inspect:p-new",
+            kind="inspect_object",
+            priority=0.95,
+            target_ref="t1_7",
+            target_signature="p-new",
+        )
+        action = ExplorationPolicy().choose(current, goal, memory)
+        self.assertEqual(action.parameters["effector"], "hand_left")
 
     def test_survival_goal_maps_to_retreat(self) -> None:
         current = frame(damage=0.5)

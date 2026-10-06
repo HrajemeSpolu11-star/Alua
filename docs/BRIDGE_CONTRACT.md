@@ -113,3 +113,17 @@ Tento dokument musí zůstat synchronizovaný s:
 - AluaWorld docs/AGENT_WORLD_CONTRACT.md.
 
 Při změně Bridge schema se nejdřív mění verzovaný kontrakt a testy, teprve potom runtime Alua.
+
+## Tělesný efektor v schema v1
+
+`parameters.effector` je volitelné kompatibilní pole. Alua jej volí pouze podle vlastního kanálu `body_schema`. Bridge hodnotu transparentně přenese a World ji fyzicky ověří.
+
+Příklad:
+
+```text
+type: manipulate
+target_ref: krátkodobý handle
+parameters: {verb: touch, effector: hand_right}
+```
+
+World-only `/v1/world/agents/status` není dostupný Alua tokenem. Slouží výhradně panelu testera pro rozlišení aktivní session od nedávno běžícího procesu Alua.

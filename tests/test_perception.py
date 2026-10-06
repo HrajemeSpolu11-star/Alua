@@ -7,6 +7,24 @@ from alua.perception import build_frame
 
 
 class PerceptionTests(unittest.TestCase):
+    def test_body_schema_remains_available_to_policy_without_world_truth(self) -> None:
+        frame = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 1,
+            "simulation_time": 0.25,
+            "channels": {
+                "body_schema": {
+                    "schema_version": 1,
+                    "effectors": {
+                        "hand_right": {"present_signal": 1, "touch_signal": 1, "occupied_signal": 0}
+                    },
+                }
+            },
+        })
+        hand = frame.persistent["channels"]["body_schema"]["effectors"]["hand_right"]
+        self.assertEqual(hand["touch_signal"], 1)
+
     def test_target_ref_is_ephemeral_but_keeps_runtime_association(self) -> None:
         frame = build_frame({
             "schema_version": 1,

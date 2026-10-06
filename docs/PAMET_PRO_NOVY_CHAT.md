@@ -104,3 +104,15 @@ Po spuštění Worldu a Bridge:
 ## Oprava CI 2026-10-06
 
 Aktivní ověřování nejistých zkušeností mělo konflikt priorit: `scan_obstacle` přebíjel `inspect_object`. Priorita ověřovacího cíle byla opravena tak, aby první dva kontrolní pokusy proběhly a po třetím se cíl dál nenabízel. Tato oprava nemění Bridge ani World kontrakt.
+
+## Vlastní tělo a efektory – 2026-10-06
+
+- World observation má bezpečný `body_schema` pro hlavu, trup, dvě ruce a dvě chodidla;
+- Alua smí znát vlastní anatomii, ale ne význam externích objektů;
+- ExplorationPolicy při `touch` vybírá volnou `hand_right`, případně `hand_left`;
+- volba je v `parameters.effector` a v decision rationale;
+- Bridge efektor pouze přenáší, World ověřuje jeho existenci, obsazenost, sílu a dosah;
+- ACK stále není fyzický výsledek;
+- autonomní pickup/push/break zůstává vypnutý;
+- chybějící tělo `alua:1` nově vytvoří první tester automaticky, ale samostatný Python proces Alua se musí stále spustit zvlášť;
+- panel Worldu rozlišuje tělo, Bridge session a nedávnou skutečnou aktivitu tohoto procesu.

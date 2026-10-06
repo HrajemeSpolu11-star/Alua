@@ -32,6 +32,7 @@ Implementováno:
 - bezpečná autonomní ExplorationPolicy;
 - move a look podle kontraktu, který vlastní AluaWorld;
 - nedestruktivní touch blízkého neznámého cíle;
+- vnímání vlastních částí těla a volba volné levé/pravé ruky pro touch;
 - ústup při damage signálu;
 - CLI doctor, status a run;
 - unit/contract testy a GitHub CI;
@@ -94,6 +95,7 @@ Dále:
 - docs/MEMORY_MODEL.md
 - docs/LEARNING_AND_DECISION.md
 - docs/EMBODIED_LEARNING_V1.md
+- docs/BODY_SCHEMA.md
 - docs/REPOSITORY_BOUNDARIES.md
 - docs/SECURITY_AND_DATA_POLICY.md
 - docs/ROADMAP.md

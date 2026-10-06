@@ -94,3 +94,7 @@ Skutečný lokální E2E test:
     bash tools/e2e_smoke_termux.sh
 
 E2E helper vyžaduje aktivní session, epizodu, decision a alespoň jeden learned belief.
+
+## Body schema
+
+`tests/test_policy.py` ověřuje, že touch používá `hand_right`, a při její obsazenosti `hand_left`. Chybějící či neplatný signál nesmí shodit runtime. Test neposuzuje fyzický úspěch z ACK; ten nadále patří do pozdější sensory attribution.
