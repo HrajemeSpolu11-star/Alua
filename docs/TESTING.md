@@ -73,3 +73,24 @@ GitHub Actions:
 - boundary audit.
 
 Po každém commitu na main se musí CI ověřit.
+
+
+## Embodied learning V1
+
+Testy navíc ověřují:
+- bounded WorkingMemory a clear při session resetu;
+- runtime asociaci target_ref s appearance_id bez persistence target_ref;
+- parsování motorického feedbacku;
+- bezpečný touch pouze u blízkého nového cíle;
+- obstacle scan, cautious move a damage avoidance;
+- schema v1 -> v2 migraci;
+- automatický backup staré SQLite;
+- invalidaci pending expectation při změně session;
+- odstranění target_ref z decision i expectation persistence;
+- korelaci source_sequence -> expectation;
+- vznik evidence-based belief po budoucím motorickém vjemu.
+
+Skutečný lokální E2E test:
+    bash tools/e2e_smoke_termux.sh
+
+E2E helper vyžaduje aktivní session, epizodu, decision a alespoň jeden learned belief.

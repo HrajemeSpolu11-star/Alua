@@ -69,3 +69,22 @@ Audit zároveň záměrně ponechal jako otevřené blokery:
 - reconciliation decisions po změně session;
 - belief/outcome vrstvu;
 - ověření stability appearance_id přes session.
+
+
+## 2026-10-06 – embodied learning V1
+
+Po dokončení persistentního těla a motorického sensory kontraktu v AluaWorld byla odstraněna wait-only brzda.
+
+Implementováno:
+- SQLite schema v2 a automatický backup před migrací;
+- expectations korelované Bridge action_sequence;
+- beliefs se support/contradiction a confidence;
+- invalidace starých pending world akcí při změně session;
+- bounded WorkingMemory;
+- target_ref association pouze v RAM;
+- motor outcome attribution;
+- první learning rules;
+- bezpečná ExplorationPolicy pro move/look/touch;
+- E2E smoke helper pro skutečný tříprocesový běh.
+
+Destruktivní pickup/push/break nejsou v autonomní policy používány. Nejdříve musí vzniknout risk/utility model.

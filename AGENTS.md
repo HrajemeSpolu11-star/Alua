@@ -24,9 +24,9 @@ Povinné zásady:
 
 Před zápisem změny spustit:
 
-    python -m compileall -q src tests tools
-    python -m unittest discover -s tests -v
-    python tools/audit_repo.py
+    bash tools/run_tests.sh
+
+Tento helper zahrnuje compileall, unittest, boundary audit a shell syntax E2E helperu.
 
 Dále:
 - zkontrolovat migrace databáze;
