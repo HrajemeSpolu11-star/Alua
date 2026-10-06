@@ -19,50 +19,78 @@ Stav: hotovo 2026-10-06.
 
 ## Fáze B – samostatný runtime
 
+Stav: implementováno / čeká na skutečný end-to-end test.
+
+Hotovo:
 - Python package;
 - config z environmentu;
 - CLI;
-- SQLite schema a migrations;
+- SQLite schema;
 - BridgeClient;
 - čtení session;
 - polling observations;
 - perzistence last processed sequence;
-- idempotentní submit action;
-- graceful shutdown;
-- health/doctor příkaz;
-- unit testy a CI.
+- deterministické client_action_id;
+- idempotentně opakovatelný ActionRequest;
+- graceful KeyboardInterrupt;
+- reconnect/backoff pro dočasnou nedostupnost;
+- doctor/status/run;
+- unit testy;
+- contract test HTTP klienta;
+- CI;
+- statický audit hranic.
 
-Podmínka dokončení:
-Alua proces se připojí k testovacímu Bridge, bezpečně přečte observation, přežije restart a umí odeslat wait/look bez přímé vazby na World.
+Zbývá:
+- ověřit proti skutečně běžícímu AluaBridge;
+- dlouhodobý restart test na telefonu;
+- migrační framework před schema v2.
 
 ## Fáze C – perception + working memory
 
-- normalizace observations;
-- bounded working memory;
-- session transition handling;
-- target_ref lifecycle;
-- novelty tracking;
-- perceptual signatures;
-- čisté testy proti world-truth contamination.
+Stav: částečně implementováno.
 
-Podmínka:
-Alua umí popsat pouze to, co obdržela jako vjem, a nepřidá skrytou sémantiku.
+Hotovo:
+- strict observation validation;
+- druhá rekurzivní world-truth kontrola;
+- PerceptionFrame;
+- oddělení persistentní části a ephemeral target_ref;
+- appearance_id familiarity statistics.
+
+Zbývá:
+- plná bounded working memory;
+- novelty tracking přes více modalit;
+- časové události a sensory gaps;
+- aktivní target lifecycle;
+- explicitní uncertainty representation.
 
 ## Fáze D – episodic memory + beliefs
 
-- epizody;
-- evidence links;
+Stav: základ epizod implementován.
+
+Hotovo:
+- dlouhodobá epizoda očištěná od target_ref;
+- session + simulation time + observation sequence;
+- appearance evidence.
+
+Zbývá:
 - belief store;
 - confidence;
 - contradiction handling;
 - decay;
-- jednoduché learned transition statistics.
-
-Podmínka:
-opakovaná zkušenost mění přesvědčení a rozporná zkušenost je umí opravit.
+- evidence links;
+- learned transition statistics.
 
 ## Fáze E – první autonomní rozhodování
 
+Stav: bootstrap pouze.
+
+Hotovo:
+- decision persistence;
+- rationale;
+- bezpečná wait policy;
+- ActionRequest přes Bridge.
+
+Zbývá:
 - exploration policy;
 - need inputs;
 - goal candidates;
@@ -70,10 +98,7 @@ opakovaná zkušenost mění přesvědčení a rozporná zkušenost je umí opra
 - bounded planner;
 - pending expectations;
 - outcome attribution;
-- decision trace.
-
-Podmínka:
-jedna Alua dokáže bez ručního příkazu provést cyklus pozoruj -> rozhodni -> jednej -> pozoruj následek -> uprav zkušenost.
+- aktivní move/look/interact/manipulate po dokončení body kontraktu.
 
 ## Fáze F – end-to-end AluaWorld
 

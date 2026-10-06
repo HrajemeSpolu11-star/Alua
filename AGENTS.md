@@ -22,12 +22,17 @@ Povinné zásady:
 - Nová schopnost musí mít vlastníka, API, persistenci, test a dokumentaci.
 - Starý Lua companion kód se nerozšiřuje jako hlavní AI.
 
-Před zápisem změny:
-- spustit dostupné unit testy;
-- spustit integrační test s falešným Bridge serverem;
-- ověřit, že cognition neimportuje transportní tajemství ani world adapter;
+Před zápisem změny spustit:
+
+    python -m compileall -q src tests tools
+    python -m unittest discover -s tests -v
+    python tools/audit_repo.py
+
+Dále:
 - zkontrolovat migrace databáze;
 - aktualizovat CHANGELOG.md;
-- při změně architektury aktualizovat docs/DECISIONS.md a docs/PAMET_PRO_NOVY_CHAT.md.
+- při změně architektury aktualizovat docs/DECISIONS.md;
+- aktualizovat docs/PAMET_PRO_NOVY_CHAT.md a docs/IMPLEMENTATION_LOG_AI.md;
+- ověřit GitHub Actions po zápisu.
 
 Preferovat jeden ucelený commit místo série drobných mezikroků.

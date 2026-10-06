@@ -13,26 +13,51 @@ Alua AI smí přijímat pouze vjemy svého těla, vytvářet si vlastní paměť
 
 ## Aktuální stav
 
-Hotovo:
-- historický Luanti companion prototyp s follow/stay/recall;
-- původní modulární Lua základ a verzovaný stav;
-- dlouhodobá vize učení bez vševědoucnosti;
-- AluaBridge V1 na samostatném repozitáři;
-- nový dokumentační základ pro samostatnou Alua AI;
-- přesný kontrakt vůči AluaBridge;
-- návrh kognitivní architektury, paměti, učení, testování a provozu.
+Implementováno v nové Python architektuře:
+- samostatný Python 3.12+ package;
+- pouze localhost konfigurace AluaBridge;
+- per-agent token pouze z prostředí;
+- Agent API klient pro health, session, observations a actions;
+- striktní validace schema_version 1;
+- druhá obrana proti world-truth klíčům na straně Alua;
+- vlastní SQLite kognitivní persistence;
+- session transition s resetem krátkodobého observation cursoru;
+- dlouhodobé epizody bez ukládání target_ref;
+- statistika známých appearance_id bez přiřazení významu;
+- bootstrap kognitivní cyklus observation -> memory -> decision -> ActionRequest;
+- konzervativní první policy používající pouze wait;
+- deterministické client_action_id pro idempotentní retry;
+- CLI doctor, status a run;
+- automatické unit/contract testy;
+- statický audit hranic;
+- GitHub CI.
 
 Nehotovo:
-- nový Python runtime Alua AI;
-- Bridge klient;
-- pracovní a dlouhodobá paměť v nové architektuře;
-- world model;
-- potřeby a cíle;
-- plánování a rozhodování;
-- učení z následků;
-- end-to-end test s jedním tělem v AluaWorld.
+- plnohodnotná working memory;
+- evidence-based belief store;
+- needs a goals;
+- aktivní explorace move/look/manipulate;
+- outcome attribution z budoucích observations;
+- planner;
+- učení dovedností;
+- end-to-end test se skutečným persistentním AI tělem v AluaWorld.
 
-Starý Lua kód zůstává zatím v repozitáři jako historický funkční prototyp. Nesmí se dále rozšiřovat jako hlavní mozek.
+Starý Lua kód zůstává v repozitáři jako historický funkční prototyp. Nesmí se dále rozšiřovat jako hlavní mozek.
+
+## Rychlý start
+
+    python -m venv .venv
+    .venv/bin/pip install -e .
+    cp .env.example .env
+
+Nastav environment proměnné z .env a potom:
+
+    .venv/bin/python -m alua doctor
+    .venv/bin/python -m alua status
+    .venv/bin/python -m alua run --once
+    .venv/bin/python -m alua run
+
+Podrobnosti jsou v docs/OPERATIONS_TERMUX.md.
 
 ## Neměnné hranice
 
@@ -43,7 +68,7 @@ Starý Lua kód zůstává zatím v repozitáři jako historický funkční prot
 5. target_ref je krátkodobý handle, ne identita objektu.
 6. ACK akce není fyzický výsledek; následek se poznává až z budoucích vjemů.
 7. Kognitivní paměť musí přežít restart AI a nesmí být uložená v Bridge.
-8. Každé naučené tvrzení musí mít evidenci, confidence a možnost opravy.
+8. Každé budoucí naučené tvrzení musí mít evidenci, confidence a možnost opravy.
 9. Zásadní změna není hotová bez testu a dokumentace.
 
 ## Dokumentace

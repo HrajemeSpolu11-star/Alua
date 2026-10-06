@@ -2,6 +2,27 @@
 
 ## Nezveřejněno
 
+### 2026-10-06 – první samostatný Alua AI runtime
+
+Implementováno:
+- Python 3.12+ package src/alua;
+- bezpečná localhost konfigurace;
+- AluaBridge Agent API klient;
+- validace session a observations proti schema_version 1;
+- vlastní SQLite persistence;
+- očištění target_ref před dlouhodobým uložením;
+- epizodická evidence a appearance statistiky;
+- session transition;
+- deterministické client_action_id;
+- první bezpečná bootstrap policy;
+- runtime step a dlouhodobá smyčka s backoffem;
+- CLI doctor/status/run;
+- unit a contract testy;
+- statický boundary audit;
+- GitHub CI.
+
+Bootstrap policy záměrně používá jen wait. Aktivní move/look/manipulate se zapne až po přesném end-to-end kontraktu persistentního AI těla v AluaWorld; nechceme vymýšlet význam parametrů pohybu uvnitř mozku.
+
 ### 2026-10-06 – přechod na samostatnou Alua AI
 
 Architektura:
@@ -20,8 +41,6 @@ Dokumentace:
 - popsán model vnímání, přesvědčení, paměti a učení;
 - přidána pravidla bezpečnosti, testování, provozu a budoucí práce;
 - aktualizována roadmapa a architektonická rozhodnutí.
-
-### Předchozí historie
 
 ## 0.2.0 – 2026-09-24
 

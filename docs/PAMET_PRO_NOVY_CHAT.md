@@ -15,16 +15,37 @@ Tři repozitáře:
 
 Původní Alua z 2026-09-24 byla Luanti companion mod s npc.lua, commands.lua a core Lua základem.
 
-Tento návrh je překonán.
-
 Od 2026-10-06:
-- nový mozek nebude Luanti mod;
-- nebude běžet uvnitř World procesu;
-- nebude volat core.*;
-- bude samostatná Python aplikace;
+- nový mozek není Luanti mod;
+- neběží uvnitř World procesu;
+- nevolá core.*;
+- je samostatná Python aplikace;
 - jediný runtime vstup/výstup je AluaBridge Agent API.
 
 Starý Lua prototyp se zatím nemaže, protože je součást historie a může sloužit jako reference.
+
+## Stav nové implementace
+
+Existuje:
+- pyproject.toml;
+- src/alua Python package;
+- Config s vynuceným loopback Bridge URL;
+- BridgeClient;
+- schema validation;
+- PerceptionFrame;
+- SQLite Store;
+- session transitions;
+- epizody bez target_ref;
+- appearance familiarity;
+- decision persistence;
+- bootstrap wait policy;
+- Runtime.step a run_forever;
+- CLI doctor/status/run;
+- testy;
+- boundary audit;
+- GitHub CI.
+
+Bootstrap policy zatím neposílá move/look/manipulate. Je to záměr: AluaWorld ještě nemá zdokumentované a end-to-end ověřené parametry persistentního AI body adapteru. Mozek nesmí parametry těla vymyslet sám.
 
 ## Stav AluaBridge
 
@@ -45,78 +66,38 @@ Agent endpointy:
 - GET /v1/agent/observations
 - POST /v1/agent/actions
 
-Povolené action types:
-- wait;
-- move;
-- look;
-- interact;
-- manipulate.
-
 ## Nejvyšší pravidlo
 
 Alua nesmí znát world truth, kterou sama nevnímala nebo neodvodila.
 
-Zakázané zkratky zahrnují:
-- node_name;
-- item_name;
-- material;
-- biome;
-- catalog_id;
-- internal_id;
-- absolute_position;
-- přímý World katalog;
-- admin telemetry.
-
 ## target_ref
 
 Je krátkodobý opaque handle.
-Není objektová identita.
-Nesmí do long-term memory jako ID věci.
+V runtime PerceptionFrame může krátce existovat v RAM.
+Do persistentního percept_json se odstraňuje.
 
 ## Action outcome
 
 Přijetí akce nebo ACK není fyzický úspěch.
-Výsledek se učí až z budoucí observation.
+Výsledek se bude učit až z budoucí observation.
 
-## Cílová technologie V1
+## Technologie V1
 
 - Python 3.12+;
-- standard library pokud rozumně stačí;
+- standard library;
 - SQLite;
 - jeden agent na jeden proces;
 - jeden DB soubor na agenta;
 - žádný povinný externí LLM;
-- bounded working memory;
-- malý deterministický planner;
-- důraz na replay a explainability.
+- důraz na replay, provenance a explainability.
 
-## Co je už hotové v tomto repozitáři
+## Bezprostřední další práce
 
-- dokumentační základ nové architektury;
-- starý funkční Lua companion prototyp;
-- historie původních architektonických úvah.
-
-## Co se má implementovat jako první
-
-1. pyproject + src/alua package;
-2. config;
-3. schema;
-4. SQLite store + migrations;
-5. BridgeClient;
-6. runtime session/poll loop;
-7. safe wait/look policy;
-8. unit/contract testy;
-9. CI;
-10. až potom perception/memory/belief learning.
-
-## Co nedělat jako první
-
-- jazykový model;
-- neuronové sítě;
-- multi-agent supervisor;
-- reprodukci;
-- sociální systém;
-- crafting knowledge;
-- velký planner.
-
-Nejdřív musí být spolehlivý percepce-paměť-akce loop jedné Alua.
+1. ověřit CI;
+2. napojit runtime na skutečný AluaBridge;
+3. v AluaWorld vytvořit persistentní AI body adapter s přesným move/look kontraktem;
+4. doplnit bounded working memory;
+5. belief store + evidence;
+6. pending expectations a outcome attribution;
+7. aktivní exploraci;
+8. až potom planner.

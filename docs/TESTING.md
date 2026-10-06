@@ -1,103 +1,75 @@
 # Testování Alua AI
 
-## Cíl
+## Povinné lokální kontroly
 
-Testy musí dokazovat nejen funkčnost, ale i epistemickou čistotu.
+    python -m compileall -q src tests tools
+    python -m unittest discover -s tests -v
+    python tools/audit_repo.py
 
-## Unit testy
+V Termuxu lze použít:
+    bash tools/run_tests.sh
 
-### Bridge client
-- správná Authorization hlavička;
-- token se neobjeví v logu;
-- after_sequence navazuje na uloženou hodnotu;
-- timeout retry zachová client_action_id;
-- změna session vyvolá invalidaci krátkodobého stavu.
+## Co aktuální testy pokrývají
+
+### Config
+- loopback Bridge je povolen;
+- vzdálený Bridge endpoint je odmítnut.
+
+### Schema
+- nested world truth je odmítnut;
+- session jiného agenta je odmítnuta.
 
 ### Perception
-- neznámá pole se neinterpretují jako fakta;
-- appearance_id zůstane neprůhledné;
-- target_ref se nedostane do long-term identity;
-- pořadí sequence je monotónní.
+- target_ref zůstane ephemeral;
+- persistentní percept target_ref neobsahuje;
+- appearance_id se zachová jako neprůhledný podpis.
 
-### Memory
-- bounded working memory;
-- epizoda přežije restart;
-- migration;
-- rollback při chybě migrace;
-- agent isolation.
+### Store
+- změna session resetuje observation cursor;
+- dlouhodobá appearance zkušenost zůstává;
+- persistentní epizoda neobsahuje target_ref.
 
-### Beliefs
-- evidence zvýší confidence;
-- contradiction confidence sníží;
-- belief lze revidovat;
-- nepřítomnost observation není automaticky negativní důkaz.
+### Runtime
+- observation se uloží;
+- vznikne decision;
+- bootstrap odešle bezpečný wait;
+- bez nové observation se neposílá další akce.
 
-### Decision
-- planner respektuje povolené typy akcí;
-- risk budget;
-- pevný limit plánování;
-- stejné vstupy a seed dávají deterministický výsledek tam, kde je to požadováno.
+### Bridge client
+- Agent endpoint dostane správný bearer token;
+- veřejný health endpoint agent token nedostane.
 
 ## Contract test s falešným Bridge
 
-Lokální fake server simuluje:
-- session;
-- observations;
+Další rozšíření má simulovat:
 - 403;
 - 409 target_expired;
 - 429 queue full;
 - timeout po přijetí akce;
 - restart session.
 
-Test ověří, že transportní chyba nezmění world belief jako fyzický outcome.
+Transportní chyba nesmí měnit world belief jako fyzický outcome.
 
 ## Replay test
 
-Uložená série observations má jít znovu přehrát do čisté dočasné DB.
+Bude přidán spolu s belief store.
 
-Výsledek:
-- stejné epizody;
-- stejné beliefs pro deterministickou V1;
-- stejné rozhodovací stopy s výjimkou explicitně nestabilních časových metadat.
+## Negativní audit
 
-## End-to-end smoke test
-
-Po spojení s AluaBridge:
-1. načíst session;
-2. přijmout observation;
-3. uložit sequence;
-4. vybrat bezpečnou akci;
-5. odeslat ActionRequest;
-6. čekat na další observation;
-7. vytvořit epizodu a outcome evidence.
-
-## Negativní testy
-
-- žádný import Luanti;
-- žádný AluaWorld source import;
+tools/audit_repo.py kontroluje mimo jiné:
+- žádný přímý Luanti/Minetest import;
+- žádné aw_agents/aw_materials/aw_world_senses vazby;
 - žádný World token;
-- žádný bearer token v DB;
-- žádná absolute_position v belief test fixture, pokud by prošla přes Bridge boundary;
-- žádný přímý překlad technického world ID.
-
-## Výkonové testy
-
-Měřit:
-- čas jednoho kognitivního cyklu;
-- RAM po dlouhém běhu;
-- růst SQLite;
-- čas startu po velké paměti;
-- počet planner uzlů;
-- počet DB zápisů na observation.
+- síťový import pouze v bridge_client.py;
+- žádné subprocess/os.system v kognitivním runtime.
 
 ## CI
 
-Před merge:
-- syntax/compile;
-- unit tests;
-- contract tests;
-- migration tests;
-- static boundary audit;
-- git diff --check.
+GitHub Actions:
+- Python 3.12;
+- editable install;
+- compileall;
+- unittest;
+- boundary audit.
 
-Po vytvoření runtime bude přesný příkazový checklist přidán sem i do AGENTS.md.
+Po každém commitu na main se musí CI ověřit.

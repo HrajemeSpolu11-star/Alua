@@ -1,7 +1,5 @@
 # Provoz Alua AI v Termuxu
 
-Tento dokument popisuje cílový provoz po implementaci Python runtime.
-
 ## Umístění
 
 Doporučeně:
@@ -14,59 +12,68 @@ Kognitivní data:
 
 DB nesmí být uvnitř Git repozitáře.
 
-## Procesy
+## Instalace
 
-Na jednom telefonu mohou běžet tři oddělené procesy:
-1. Luanti server s AluaWorld;
-2. AluaBridge na 127.0.0.1:8787;
-3. Alua AI pro agent_id alua:1.
+    pkg install python git
+    git clone <Alua repository> ~/alua/Alua
+    cd ~/alua/Alua
+    python -m venv .venv
+    .venv/bin/pip install -e .
 
-## Environment Alua
+Připrav environment podle .env.example. Token musí být stejný agent token, který má pro alua:1 nakonfigurovaný AluaBridge.
 
-Plánované proměnné:
+## Environment
+
     ALUA_AGENT_ID=alua:1
     ALUABRIDGE_URL=http://127.0.0.1:8787
     ALUA_AGENT_TOKEN=<secret>
     ALUA_DB_PATH=$HOME/alua/data/alua-1/alua.sqlite3
+    ALUA_POLL_INTERVAL=0.25
+    ALUA_REQUEST_TIMEOUT=2.0
 
 Token nesmí být commitnutý.
 
-## Start pořadí
+## Procesy
 
-1. AluaWorld;
-2. AluaBridge;
+Na jednom telefonu běží odděleně:
+1. Luanti server s AluaWorld;
+2. AluaBridge na 127.0.0.1:8787;
 3. Alua AI.
 
-Alua AI ale musí umět bezpečně přežít:
-- Bridge ještě neběží;
-- World session ještě neexistuje;
-- Bridge se restartuje;
-- World se restartuje.
+## Ověření
 
-Nemá crash-loopovat agresivně; používá omezený backoff.
+Po exportu environment proměnných:
+
+    .venv/bin/python -m alua doctor
+    .venv/bin/python -m alua status
+    .venv/bin/python -m alua run --once
+
+doctor kontroluje DB, /health a aktivní agent session.
+
+## Start
+
+    .venv/bin/python -m alua run
+
+Alua runtime umí čekat při dočasné nedostupnosti Bridge s omezeným backoffem. Neplatná autentizace je fatální chyba a nemá se nekonečně opakovat.
 
 ## Backup
 
-Před migrací DB:
+Před budoucí DB migrací:
 - zastavit Alua proces;
 - vytvořit timestampovanou kopii DB;
 - spustit migration doctor;
 - až potom start runtime.
 
-## Pozorování
+## Testy
 
-Plánované CLI:
-    python -m alua doctor
-    python -m alua status
-    python -m alua run
-
-status má ukazovat provozní stav a kognitivní souhrn, ne tajné tokeny ani world truth.
+    bash tools/run_tests.sh
 
 ## Telefonní omezení
 
-V1 musí být navržena tak, aby:
-- neběžela v těsném busy-loop;
-- nepoužívala těžký LLM inference jako povinnou součást;
-- držela bounded working memory;
-- dávkovala persistence;
-- neměla vysokofrekvenční web/network provoz mimo localhost.
+V1:
+- nemá busy-loop;
+- nemá povinný LLM inference;
+- používá SQLite;
+- komunikuje jen přes localhost;
+- neposílá data do cloudu;
+- neukládá bearer token.
