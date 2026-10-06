@@ -70,26 +70,33 @@ class IntrinsicCurriculum:
         if (
             nearest
             and nearest.appearance_id
-            and nearest.appearance_id in novel_appearance_ids
             and nearest.distance_fraction is not None
             and nearest.distance_fraction <= 0.08
         ):
             key = f"inspect:{nearest.appearance_id}"
-            candidates.append(
-                GoalCandidate(
-                    key=key,
-                    kind="inspect_novel",
-                    priority=self._adjust_priority(0.95, goal_stats(key)),
-                    target_ref=nearest.target_ref,
-                    target_signature=nearest.appearance_id,
-                    reason={
-                        "selector": "intrinsic_curriculum",
-                        "novelty": 1.0,
-                        "distance_fraction": nearest.distance_fraction,
-                        "ray_index": nearest.ray_index,
-                    },
+            inspect_stats = goal_stats(key)
+            attempts = int(inspect_stats.get("attempts", 0)) if inspect_stats else 0
+            failures = int(inspect_stats.get("failures", 0)) if inspect_stats else 0
+            novel = nearest.appearance_id in novel_appearance_ids
+            needs_verification = attempts < 3 and failures < 2
+            if novel or needs_verification:
+                base = 0.95 if novel else max(0.58, 0.70 - attempts * 0.06)
+                candidates.append(
+                    GoalCandidate(
+                        key=key,
+                        kind="inspect_object",
+                        priority=self._adjust_priority(base, inspect_stats),
+                        target_ref=nearest.target_ref,
+                        target_signature=nearest.appearance_id,
+                        reason={
+                            "selector": "intrinsic_curriculum",
+                            "novelty": 1.0 if novel else 0.0,
+                            "verification_attempt": attempts + 1,
+                            "distance_fraction": nearest.distance_fraction,
+                            "ray_index": nearest.ray_index,
+                        },
+                    )
                 )
-            )
 
         central = next((target for target in frame.targets if target.ray_index == 0), None)
         if (

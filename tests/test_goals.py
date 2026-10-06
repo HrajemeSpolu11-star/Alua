@@ -56,9 +56,30 @@ class GoalTests(unittest.TestCase):
             memory,
             lambda _: None,
         )
-        self.assertEqual(goal.kind, "inspect_novel")
+        self.assertEqual(goal.kind, "inspect_object")
         self.assertEqual(goal.target_signature, "p-new")
         self.assertTrue(goal.target_ref)
+
+    def test_known_object_is_rechecked_only_while_uncertain(self) -> None:
+        frame = make_frame(2, distance=0.05, appearance="p-known")
+        memory = WorkingMemory()
+        memory.add(frame)
+
+        goal = IntrinsicCurriculum().choose(
+            frame,
+            set(),
+            memory,
+            lambda key: {"attempts": 1, "successes": 1, "failures": 0} if key == "inspect:p-known" else None,
+        )
+        self.assertEqual(goal.kind, "inspect_object")
+
+        finished = IntrinsicCurriculum().choose(
+            frame,
+            set(),
+            memory,
+            lambda key: {"attempts": 3, "successes": 3, "failures": 0} if key == "inspect:p-known" else None,
+        )
+        self.assertNotEqual(finished.kind, "inspect_object")
 
     def test_repeated_failed_exploration_promotes_recovery_scan(self) -> None:
         frame = make_frame(3)

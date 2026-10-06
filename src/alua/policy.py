@@ -53,7 +53,7 @@ class ExplorationPolicy:
                 },
             )
 
-        if goal.kind == "inspect_novel" and goal.target_ref:
+        if goal.kind == "inspect_object" and goal.target_ref:
             return ActionIntent(
                 action_type="manipulate",
                 parameters={"verb": "touch"},

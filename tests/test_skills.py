@@ -82,7 +82,7 @@ class SkillLibraryTests(unittest.TestCase):
                     agent_id="alua:1",
                     skill_key="skill-test",
                     kind="manipulate",
-                    goal_kind="inspect_novel",
+                    goal_kind="inspect_object",
                     target_signature="p123",
                     steps=[{
                         "type": "manipulate",

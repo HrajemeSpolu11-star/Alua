@@ -118,7 +118,7 @@ class RuntimeTests(unittest.TestCase):
                 self.assertEqual(summary["reusable_skills"], 0)
 
                 decision = store.decision(first.decision_id)
-                self.assertEqual(decision["goal_kind"], "inspect_novel")
+                self.assertEqual(decision["goal_kind"], "inspect_object")
                 self.assertNotIn("t1_7", decision["action_json"])
             finally:
                 store.close()

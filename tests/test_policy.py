@@ -28,7 +28,7 @@ class PolicyTests(unittest.TestCase):
         memory.add(current)
         goal = GoalCandidate(
             key="inspect:p-new",
-            kind="inspect_novel",
+            kind="inspect_object",
             priority=0.95,
             target_ref="t1_7",
             target_signature="p-new",
