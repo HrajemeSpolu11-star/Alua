@@ -21,6 +21,8 @@ Implementováno:
 - statický boundary audit;
 - GitHub CI.
 
+Po prvním CI běhu byl zpřesněn boundary audit: čisté parsování URL přes urllib.parse je povolené, zatímco skutečný síťový přístup zůstává mimo bridge_client.py zakázaný. Všech 11 runtime testů prošlo už v prvním běhu.
+
 Bootstrap policy záměrně používá jen wait. Aktivní move/look/manipulate se zapne až po přesném end-to-end kontraktu persistentního AI těla v AluaWorld; nechceme vymýšlet význam parametrů pohybu uvnitř mozku.
 
 ### 2026-10-06 – přechod na samostatnou Alua AI

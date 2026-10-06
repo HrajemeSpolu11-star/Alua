@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
-import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,20 +16,27 @@ FORBIDDEN_IMPORT_MARKERS = (
     "ALUABRIDGE_WORLD_TOKEN",
 )
 
-NETWORK_IMPORTS = re.compile(r"^\s*(?:from|import)\s+(urllib|http\.client|socket|requests|aiohttp)\b", re.MULTILINE)
+NETWORK_IMPORTS = re.compile(
+    r"^\s*(?:"
+    r"from\s+(?:urllib\.(?:request|error)|http\.client|socket)\s+import\b|"
+    r"import\s+(?:urllib\.(?:request|error)|http\.client|socket|requests|aiohttp)\b|"
+    r"from\s+(?:requests|aiohttp)\s+import\b"
+    r")",
+    re.MULTILINE,
+)
 
 
 def main() -> int:
     failures: list[str] = []
     for path in sorted(SOURCE.rglob("*.py")):
-        text = path.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
         rel = path.relative_to(ROOT)
         for marker in FORBIDDEN_IMPORT_MARKERS:
-            if marker in text:
+            if marker in source:
                 failures.append(f"{rel}: zakázaná přímá vazba {marker}")
-        if path.name != "bridge_client.py" and NETWORK_IMPORTS.search(text):
+        if path.name != "bridge_client.py" and NETWORK_IMPORTS.search(source):
             failures.append(f"{rel}: síťový import je povolen pouze v bridge_client.py")
-        if "subprocess" in text or "os.system" in text:
+        if "subprocess" in source or "os.system" in source:
             failures.append(f"{rel}: kognitivní runtime nesmí spouštět shell")
 
     if failures:
