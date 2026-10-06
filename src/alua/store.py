@@ -430,7 +430,7 @@ class Store:
                 "INSERT OR REPLACE INTO expectations("
                 "decision_id,agent_id,session_id,bridge_action_sequence,action_type,target_signature,"
                 "action_json,created_sequence,state,goal_key,goal_kind,skill_key,created_at"
-                ") VALUES(?,?,?,?,?,?,?,?,'pending',?,?,?,?,?)",
+                ") VALUES(?,?,?,?,?,?,?,?,'pending',?,?,?,?)",
                 (
                     decision_id,
                     agent_id,
