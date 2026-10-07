@@ -20,8 +20,8 @@ Implementováno:
 - loopback-only AluaBridge klient;
 - per-agent token pouze z prostředí;
 - striktní schema_version 1 validace a druhá world-truth obrana;
-- SQLite kognitivní schema v2;
-- automatická záloha existující DB před migrací v1 -> v2;
+- SQLite kognitivní schema v3;
+- automatická záloha existující DB před migrací v1/v2 -> v3;
 - epizodická paměť bez target_ref;
 - bounded WorkingMemory posledních 32 frame v RAM;
 - krátkodobé vazby target_ref <-> appearance_id pouze v RAM;
@@ -39,6 +39,8 @@ Implementováno:
 - Termux E2E smoke helper.
 
 AluaWorld už obsahuje persistentní fyzické tělo alua:1 a motorický sensory channel. AluaBridge má body-aware Luanti adaptér.
+
+Od 2026-10-07 je celý embodied loop ověřen v reálném běhu na Android/Termux: Alua přijímá observations, vytváří decisions, posílá actions, fyzické tělo je vykonává a pozdější sensory outcome vytváří beliefs a skills. Ověřený stav dosáhl 482 episodes, 235 decisions, 9 beliefs, 12 skills a 6 reusable skills. Podrobnosti jsou v `docs/E2E_RUNTIME_2026-10-07.md`.
 
 Záměrně zatím není autonomně zapnuto:
 - pickup;
@@ -87,6 +89,7 @@ Nejdůležitější dokument pro nový chat:
 - docs/PAMET_PRO_NOVY_CHAT.md
 
 Dále:
+- docs/E2E_RUNTIME_2026-10-07.md
 - docs/PROJECT_VISION_AI.md
 - docs/ARCHITECTURE.md
 - docs/BRIDGE_CONTRACT.md
