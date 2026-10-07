@@ -110,3 +110,29 @@ Pro delší vzorek:
 ```
 
 Po nasazení V2 se doporučuje nejprve několik minut normálně nechat Alua autonomně běžet a potom report zkontrolovat. `look_loop_detected=true` nebo `action_stereotype_detected=true` je důvod otevřít decision rationale a neřešit problém pouze vizuálním pozorováním entity.
+
+## Aktualizace na SQLite schema v4
+
+Po aktualizaci Alua není potřeba mazat kognitivní DB.
+
+První start příkazu, který otevře Store, provede migraci a vytvoří soubor ve tvaru:
+
+```text
+alua.sqlite3.pre-v4-YYYYMMDD-HHMMSS.bak
+```
+
+Potom lze ověřit:
+
+```bash
+.venv/bin/python -m alua status
+```
+
+Očekávané `schema_version` je `4`.
+
+Po několika minutách live běhu:
+
+```bash
+.venv/bin/python -m alua benchmark --limit 2000
+```
+
+Benchmark nevyžaduje běžící Bridge ani World; čte vlastní SQLite Alua.
