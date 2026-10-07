@@ -60,3 +60,31 @@ Alua může z `body_schema` znát vlastní hlavu, trup, ruce a chodidla a vybír
 ## Historická rozhodnutí
 
 Původní ADR z 2026-09-24 jsou zachována v Git historii. Jejich předpoklad, že Alua běží uvnitř Luanti, je nahrazen ADR-A001 a ADR-A002.
+
+## ADR-A017 – Hierarchická kognice nad primitivními akcemi
+
+Přijato 2026-10-07.
+
+High-level goal se už nemá přímo rovnat jedné motorické primitivě. Alua používá data-only SkillGraph, bounded planner a executive controller. World primitive action zůstává nejnižší výstupní vrstvou.
+
+Důvod: dlouhé série `look` ukázaly, že řízení pouze na úrovni jednotlivých primitiv vede k lokálním oscilacím a ad-hoc opravám.
+
+## ADR-A018 – Navigace je lokální a epistemicky omezená
+
+Přijato 2026-10-07.
+
+Alua používá cost-based receding-horizon navigaci inspirovanou pathfindery, ale nesmí číst globální mapu. Lokální world model vzniká pouze ze smyslů a je session-local.
+
+## ADR-A019 – Self-critic nesmí vytvářet world truth
+
+Přijato 2026-10-07.
+
+BehaviorCritic smí vyhodnotit pouze vlastní action/outcome historii. Může vyžádat replan, ale nesmí sám vytvářet empirické beliefs o externím světě.
+
+## ADR-A020 – Open-source reference se přebírá jako architektonický princip
+
+Přijato 2026-10-07.
+
+Voyager, Odyssey, luanti-voyager, Mineflayer Pathfinder, Baritone, Craftium, MineStudio, OpenHA a Mindcraft byly použity jako referenční architektury. Minecraft-specific knowledge, privileged map state, generated executable code a cizí world truth se nepřenášejí.
+
+Baritone kód se kvůli LGPL-3.0 do MIT jádra Alua nekopíruje. Používá se pouze obecná algoritmická inspirace.
