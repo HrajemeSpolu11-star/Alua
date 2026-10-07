@@ -1,5 +1,27 @@
 # Přehled změn
 
+## 2026-10-07 – Cognitive Core V5
+
+- field test slepé uličky ukázal, že lokální obstacle recovery nestačí: agent potřebuje vlastní route memory a explicitní návrat;
+- SQLite schema zvýšeno na v5; přidána generická tabulka `cognitive_records` a automatický pre-v5 backup;
+- přidána bounded attention se salience/surprise/uncertainty;
+- přidána multisenzorová scene integrace a temporal recurrence model;
+- přidána object permanence nad opaque `appearance_id`;
+- přidána route memory, dead-end evidence, remembered-route backtracking, relativní odometrie a weak loop closure;
+- přidán predictive action model, prediction error a bounded counterfactual deliberation;
+- přidán context-sensitive risk model, empirický self-model a interventional causal hypotheses;
+- přidána metakognice pro stagnaci, revisit loop, nejistotu a chybu interního modelu;
+- přidány regulatory drives: safety, homeostasis, curiosity, frustration a exploration;
+- přidána prospective memory, persistentní interruptible missions a aktivní safe experiments;
+- přidána memory consolidation, confidence decay starých beliefs a evidence-based concept formation;
+- přidán transferable strategy/meta-learning prior;
+- přidány social cognition/testimony a peer-behavior hooks; bez explicitních social sensory dat zůstávají inertní;
+- decision rationale nově obsahuje vysvětlitelný `cognitive_state`;
+- přidán CLI `alua cognition-status`;
+- přidány regresní testy pro attention, object permanence, prediction, metacognition, spatial backtracking, cognitive policy a schema v5;
+- kompletní kontrakt: `docs/COGNITIVE_CORE_V5.md`.
+
+
 ## 2026-10-07 – oprava one-block navigation stagnation
 
 - terénní test odhalil, že dlouhá série `move` mohla vypadat úspěšně, přestože tělo prakticky neopouštělo jeden malý prostor;

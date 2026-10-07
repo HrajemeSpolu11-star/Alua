@@ -377,6 +377,70 @@ class ExplorationPolicy:
         common = self._common(frame, goal)
         reason = self._reason(goal)
 
+        if goal.kind == "spatial_backtrack":
+            phase = reason.get("phase")
+            if phase == "turn":
+                yaw = reason.get("yaw_delta_rad")
+                yaw = float(yaw) if isinstance(yaw, (int, float)) and not isinstance(yaw, bool) else 0.0
+                return ActionIntent(
+                    action_type="look",
+                    parameters={
+                        "yaw_delta_rad": max(-0.85, min(0.85, yaw)),
+                        "pitch_delta_rad": 0.0,
+                    },
+                    duration=None,
+                    target_ref=None,
+                    target_signature=None,
+                    rationale={**common, "policy": "spatial_route_backtrack_turn"},
+                )
+            maneuver = reason.get("maneuver")
+            if maneuver == "forward":
+                forward, strafe = 0.72, 0.0
+            elif maneuver == "left":
+                forward, strafe = 0.10, -0.72
+            elif maneuver == "right":
+                forward, strafe = 0.10, 0.72
+            else:
+                forward, strafe = -0.62, 0.0
+            return ActionIntent(
+                action_type="move",
+                parameters={
+                    "mode": "walk",
+                    "forward": forward,
+                    "strafe": strafe,
+                    "vertical": 0.0,
+                    "duration_s": 0.34,
+                    "speed_fraction": 0.42,
+                },
+                duration=None,
+                target_ref=None,
+                target_signature=None,
+                rationale={
+                    **common,
+                    "policy": "spatial_route_backtrack_move",
+                    "maneuver": maneuver,
+                    "target_place": reason.get("target_place"),
+                },
+            )
+
+        if goal.kind == "deliberate_navigation":
+            action = reason.get("action")
+            if isinstance(action, dict) and action.get("type") == "move":
+                parameters = action.get("parameters")
+                if isinstance(parameters, dict):
+                    return ActionIntent(
+                        action_type="move",
+                        parameters=dict(parameters),
+                        duration=None,
+                        target_ref=None,
+                        target_signature=None,
+                        rationale={
+                            **common,
+                            "policy": "model_based_counterfactual_navigation",
+                            "deliberation": reason.get("deliberation"),
+                        },
+                    )
+
         if goal.kind == "survive_breath":
             return ActionIntent(
                 action_type="move",

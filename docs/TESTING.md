@@ -176,3 +176,47 @@ Unit testy navíc kontrolují:
 - libovolný předchozí physical `look` blokuje okamžitý scan.
 
 Field test musí používat současně odpovídající AluaWorld i Alua commit. Starý World neposkytuje graded progress a není validním testem této opravy.
+
+
+## Cognitive Core V5 acceptance
+
+Nové unit testy pokrývají:
+- attention focus a sensory surprise;
+- object permanence po krátkém zmizení z pohledu;
+- persistent object concept bez target_ref;
+- predictive progress learning a růst confidence;
+- dead-end route backtracking;
+- heading correction před návratem;
+- metacognitive stagnation/loop detection;
+- cognitive snapshot persistence;
+- policy pro remembered-route return a model-selected move;
+- schema v5 `cognitive_records`;
+- v4 -> v5 backup migraci.
+
+Povinné kontroly před merge zůstávají:
+
+```bash
+python -m compileall -q src tests tools
+python -m unittest discover -s tests -v
+python tools/audit_repo.py
+```
+
+Po nasazení:
+
+```bash
+.venv/bin/python -m alua cognition-status
+.venv/bin/python -m alua evaluate --limit 2000
+.venv/bin/python -m alua benchmark --limit 2000
+```
+
+Field acceptance V5:
+- ve známé slepé větvi vznikne `spatial_backtrack` místo neomezeného look loopu;
+- návrat používá poslední vlastní route transition, ne World souřadnici;
+- opakovaný low progress zvyšuje metacognitive stagnation;
+- prediction confidence se mění pouze podle sensory outcomes;
+- action risk roste po failure/slip/damage;
+- object memory krátce přetrvá mimo zorné pole;
+- decision rationale obsahuje `cognitive_state`;
+- schema migration zachová starší dlouhodobou paměť;
+- benchmark nesmí regresovat staré anti-loop invarianty.
+

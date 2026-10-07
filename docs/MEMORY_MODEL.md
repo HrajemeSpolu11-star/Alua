@@ -129,3 +129,46 @@ Auditní vazba beliefu na konkrétní zkušenost:
 - support/contradiction.
 
 Schema v4 před migrací starší DB automaticky vytváří backup. Stávající epizody, beliefs, goals a skills se zachovávají.
+
+
+## V5 – rozšířená kognitivní paměť
+
+Schema v5 přidává `cognitive_records`, generický namespaced store pro vyšší modely.
+
+Používané record kinds zahrnují:
+- `object_concept`;
+- `spatial_place` a `spatial_transition`;
+- `predictive_model`;
+- `risk_model`;
+- `self_model`;
+- `causal_hypothesis`;
+- `temporal_pattern`;
+- `prospective_intent`;
+- `mission`;
+- `abstract_concept`;
+- `strategy_model`;
+- `social_model`, `social_testimony` a budoucí peer model;
+- `episodic_summary`;
+- `metacognitive_state`.
+
+### Paměť prostoru
+
+Route memory je session-local pracovní struktura, ale place/transition evidence se může persistovat jako perceptuální zkušenost. Relativní odometrie má uncertainty a není World souřadnice.
+
+### Object permanence
+
+Opaque `appearance_id` může mít bounded track i po krátkém zmizení ze zorného pole. `target_ref` se jako identita nepoužívá.
+
+### Prospective a mission memory
+
+Prospective record uchovává „později udělat X při triggeru Y“. Mission je dlouhodobější přerušitelný záměr.
+
+### Konsolidace
+
+Po bounded intervalu:
+- vytvoří summary poslední trajectory;
+- starým beliefs pomalu posune confidence směrem k nejistotě;
+- vytvoří concept candidates ze společných evidence-backed affordances.
+
+Cílem je dlouhodobá paměť bez nutnosti držet každý raw frame jako stejně významný.
+

@@ -183,3 +183,66 @@ LocalNavigator z této zkušenosti odvozuje persistentní penalty. Agent se tak 
 ## Belief evidence
 
 Každý motoricky naučený belief může být zpětně spojen s observation sequence a decision ID, které jej podpořily nebo vyvrátily. Confidence zůstává Beta-smoothed a další zkušenost jej může změnit.
+
+
+## Cognitive Core V5 – prediction, causality a meta-learning
+
+V5 přidává několik typů učení, které jsou záměrně oddělené:
+
+### Context-specific prediction
+
+```text
+perceptual context + action
+-> expected progress
+-> expected success
+-> confidence
+```
+
+Po outcome se uloží prediction error. Vysoká chyba zvyšuje metakognitivní pressure na přehodnocení modelu.
+
+### Risk learning
+
+Risk se učí z:
+- failure;
+- nízkého progressu;
+- slip;
+- recent damage.
+
+Risk je kontextový. Úspěšný jump v jednom kontextu nevytváří globální „jump je bezpečný“.
+
+### Self-model learning
+
+Alua si vede empirickou statistiku vlastních capabilities:
+- attempts;
+- success rate;
+- mean progress;
+- mean effort;
+- confidence.
+
+### Interventional causal hypotheses
+
+Vztah akce -> pozdější bodily/motor effect se ukládá jako hypothesis. Korelace bez vlastní intervence není automaticky kauzální belief.
+
+### Counterfactual deliberation
+
+Při stagnaci lze porovnat bounded množinu alternativ podle:
+- expected progress;
+- expected success;
+- learned risk;
+- model confidence/information value;
+- weak transferable strategy prior.
+
+Vybere se jeden krok a potom se znovu replánuje z čerstvé observation.
+
+### Strategy meta-learning
+
+`strategy.py` udržuje slabší prior přes podobné cíle a action patterns. Je to transfer hint, nikoli náhrada context-specific prediction.
+
+### Active experiments
+
+Když je uncertainty vysoká a safety/homeostasis dovolí, může `ExperimentPlanner` vytvořit nízkorizikový informační experiment. První povolená primitive je touch.
+
+### Concept formation
+
+Concept vzniká pouze ze společných evidence-backed relations více opaque appearances. Žádný technický název objektu se do abstraction vrstvy nepřenáší.
+

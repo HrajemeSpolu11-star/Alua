@@ -132,3 +132,48 @@ Více samostatných agentů, oddělené DB, supervisor a reprodukce až podle sa
 ## Definice hotovo
 
 Pouhá existence třídy nebo tabulky nestačí. Fáze vyžaduje runtime chování, test, persistenci tam kde ji potřebuje, pozorovatelný následek a aktuální dokumentaci.
+
+
+## Cognitive Core V5 – stav 2026-10-07
+
+Implementováno:
+- attention/surprise;
+- multisensory scene fusion;
+- object permanence;
+- temporal recurrence;
+- route memory a dead-end backtracking;
+- relative odometry s uncertainty;
+- predictive action model;
+- context-sensitive risk;
+- self capability model;
+- interventional causal evidence;
+- metacognition;
+- regulatory drives;
+- active experiments;
+- prospective memory;
+- persistent interruptible missions;
+- concept formation;
+- strategy transfer/meta-learning;
+- bounded consolidation a confidence decay;
+- explainable cognitive snapshot;
+- social/testimony hooks pro budoucí explicitní sensory data.
+
+Nejbližší acceptance práce už není přidávání dalších hardcoded pravidel. Je to:
+1. dlouhý field test v různých typech terénu;
+2. ověřit návrat ze slepé větve;
+3. replay/benchmark V5 trajectories;
+4. měřit DB růst, CPU a RAM;
+5. ladit thresholdy pouze z evidence;
+6. až podle chyb doplnit World sensory/action kontrakty;
+7. social/multi-agent vrstvu aktivovat až po explicitních World signálech.
+
+Dlouhodobě otevřené:
+- robustnější landmark/loop-closure inference;
+- automatická indukce více-krokových composite skills s explicitními preconditions;
+- richer tool-use experimenty;
+- obecnější sequence/temporal abstraction;
+- explicitní komunikace mezi agenty;
+- imitation a observational learning;
+- multi-agent supervisor/population;
+- volitelná high-level language/reasoning vrstva, která nikdy nebude přímo řídit motoriku.
+

@@ -11,7 +11,7 @@ from typing import Any, Iterator
 from .perception import PerceptionFrame
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def canonical_json(value: Any) -> str:
@@ -248,6 +248,22 @@ class Store:
                 );
                 CREATE INDEX IF NOT EXISTS idx_perceptual_transition_origin
                     ON perceptual_transitions(agent_id, from_signature, maneuver);
+                CREATE TABLE IF NOT EXISTS cognitive_records(
+                    agent_id TEXT NOT NULL,
+                    record_key TEXT NOT NULL,
+                    record_kind TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    confidence REAL NOT NULL,
+                    support_count INTEGER NOT NULL,
+                    contradiction_count INTEGER NOT NULL,
+                    first_sequence INTEGER NOT NULL,
+                    last_sequence INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(agent_id, record_key)
+                );
+                CREATE INDEX IF NOT EXISTS idx_cognitive_records_kind
+                    ON cognitive_records(agent_id, record_kind, updated_at);
                 """
             )
 
@@ -1154,6 +1170,180 @@ class Store:
             )
             return max(0, int(cursor.rowcount))
 
+    def upsert_cognitive_record(
+        self,
+        *,
+        agent_id: str,
+        record_key: str,
+        record_kind: str,
+        payload: dict[str, Any],
+        sequence: int,
+        supported: bool | None = None,
+        confidence: float | None = None,
+    ) -> dict[str, Any]:
+        if not record_key or not record_kind:
+            raise ValueError("record_key and record_kind are required")
+        now = time.time()
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT * FROM cognitive_records WHERE agent_id=? AND record_key=?",
+                (agent_id, record_key),
+            ).fetchone()
+            if row is None:
+                support = 1 if supported is True else 0
+                contradiction = 1 if supported is False else 0
+                inferred_confidence = (
+                    (support + 1) / (support + contradiction + 2)
+                    if supported is not None
+                    else 0.5
+                )
+                value = inferred_confidence if confidence is None else float(confidence)
+                db.execute(
+                    "INSERT INTO cognitive_records("
+                    "agent_id,record_key,record_kind,payload_json,confidence,"
+                    "support_count,contradiction_count,first_sequence,last_sequence,"
+                    "created_at,updated_at"
+                    ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        agent_id,
+                        record_key,
+                        record_kind,
+                        canonical_json(strip_ephemeral(payload)),
+                        max(0.0, min(1.0, value)),
+                        support,
+                        contradiction,
+                        int(sequence),
+                        int(sequence),
+                        now,
+                        now,
+                    ),
+                )
+            else:
+                support = int(row["support_count"]) + (1 if supported is True else 0)
+                contradiction = int(row["contradiction_count"]) + (1 if supported is False else 0)
+                if confidence is None:
+                    value = (
+                        (support + 1) / (support + contradiction + 2)
+                        if supported is not None
+                        else float(row["confidence"])
+                    )
+                else:
+                    value = float(confidence)
+                db.execute(
+                    "UPDATE cognitive_records SET record_kind=?,payload_json=?,confidence=?,"
+                    "support_count=?,contradiction_count=?,last_sequence=?,updated_at=? "
+                    "WHERE agent_id=? AND record_key=?",
+                    (
+                        record_kind,
+                        canonical_json(strip_ephemeral(payload)),
+                        max(0.0, min(1.0, value)),
+                        support,
+                        contradiction,
+                        int(sequence),
+                        now,
+                        agent_id,
+                        record_key,
+                    ),
+                )
+        return self.cognitive_record(agent_id, record_key) or {}
+
+    def cognitive_record(
+        self,
+        agent_id: str,
+        record_key: str,
+    ) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._db.execute(
+                "SELECT * FROM cognitive_records WHERE agent_id=? AND record_key=?",
+                (agent_id, record_key),
+            ).fetchone()
+        if row is None:
+            return None
+        result = dict(row)
+        result["payload"] = json.loads(result.pop("payload_json"))
+        return result
+
+    def cognitive_records(
+        self,
+        agent_id: str,
+        *,
+        record_kind: str | None = None,
+        limit: int = 256,
+    ) -> list[dict[str, Any]]:
+        limit = max(1, min(5000, int(limit)))
+        with self._lock:
+            if record_kind is None:
+                rows = self._db.execute(
+                    "SELECT * FROM cognitive_records WHERE agent_id=? "
+                    "ORDER BY updated_at DESC LIMIT ?",
+                    (agent_id, limit),
+                ).fetchall()
+            else:
+                rows = self._db.execute(
+                    "SELECT * FROM cognitive_records WHERE agent_id=? AND record_kind=? "
+                    "ORDER BY updated_at DESC LIMIT ?",
+                    (agent_id, record_kind, limit),
+                ).fetchall()
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            item["payload"] = json.loads(item.pop("payload_json"))
+            result.append(item)
+        return result
+
+    def decay_stale_beliefs(
+        self,
+        agent_id: str,
+        *,
+        before_sequence: int,
+        factor: float = 0.985,
+        floor: float = 0.05,
+        limit: int = 256,
+    ) -> int:
+        factor = max(0.5, min(1.0, float(factor)))
+        floor = max(0.0, min(0.49, float(floor)))
+        limit = max(1, min(5000, int(limit)))
+        with self._transaction() as db:
+            rows = db.execute(
+                "SELECT belief_key,confidence FROM beliefs "
+                "WHERE agent_id=? AND last_sequence<? "
+                "ORDER BY last_sequence ASC LIMIT ?",
+                (agent_id, int(before_sequence), limit),
+            ).fetchall()
+            for row in rows:
+                current = float(row["confidence"])
+                decayed = 0.5 + (current - 0.5) * factor
+                if current < 0.5:
+                    decayed = max(floor, decayed)
+                else:
+                    decayed = min(1.0 - floor, decayed)
+                db.execute(
+                    "UPDATE beliefs SET confidence=?,updated_at=? "
+                    "WHERE agent_id=? AND belief_key=?",
+                    (decayed, time.time(), agent_id, row["belief_key"]),
+                )
+        return len(rows)
+
+    def belief_rows(
+        self,
+        agent_id: str,
+        *,
+        limit: int = 512,
+    ) -> list[dict[str, Any]]:
+        limit = max(1, min(5000, int(limit)))
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT * FROM beliefs WHERE agent_id=? "
+                "ORDER BY updated_at DESC LIMIT ?",
+                (agent_id, limit),
+            ).fetchall()
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            item["value"] = json.loads(item.pop("value_json"))
+            result.append(item)
+        return result
+
     def summary(self, agent_id: str) -> dict[str, Any]:
         state = self.state(agent_id)
         with self._lock:
@@ -1201,6 +1391,10 @@ class Store:
                 "SELECT COUNT(*) FROM perceptual_transitions WHERE agent_id=?",
                 (agent_id,),
             ).fetchone()[0]
+            cognitive_records = self._db.execute(
+                "SELECT COUNT(*) FROM cognitive_records WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
         return {
             "agent_id": agent_id,
             "session_id": state["session_id"],
@@ -1216,5 +1410,6 @@ class Store:
             "belief_evidence": int(belief_evidence_count),
             "perceptual_places": int(perceptual_places),
             "perceptual_transitions": int(perceptual_transitions),
+            "cognitive_records": int(cognitive_records),
             "schema_version": SCHEMA_VERSION,
         }

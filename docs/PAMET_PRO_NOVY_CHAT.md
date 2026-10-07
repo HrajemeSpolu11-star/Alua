@@ -2,6 +2,40 @@
 
 Aktualizováno: 2026-10-07.
 
+
+## Cognitive Core V5 – aktuální kognitivní vrstva
+
+Field test ve slepé větvi ukázal, že agent uměl poznat špatný motorický progress, ale neuměl použít vlastní historii k návratu. V5 proto přidává vyšší kognitivní vrstvu v repu **Alua**, nikoli hardcoded řešení ve Worldu.
+
+Klíčové moduly:
+- `attention.py` – salience/surprise/uncertainty;
+- `scene.py` + `temporal.py` – multisensory scene a recurrence;
+- `object_memory.py` – object permanence;
+- `spatial_memory.py` – route stack, dead-end detection, remembered backtracking, relative odometry;
+- `predictive.py` – action prediction + counterfactual ranking;
+- `risk.py`, `self_model.py`, `causal.py`;
+- `metacognition.py` – stagnation/loop/model-error awareness;
+- `drives.py` – regulatory priorities;
+- `experiments.py` – bounded safe active experiments;
+- `prospective.py` + `missions.py`;
+- `concepts.py` + `strategy.py`;
+- `consolidation.py`;
+- `social.py` + future peer-model hooks;
+- `cognition.py` – orchestrator.
+
+SQLite schema je **v5**. První Store-opening command po update vytvoří pre-v5 backup starší DB a zachová staré episodes/beliefs/goals/skills.
+
+Nový diagnostický příkaz:
+
+```bash
+.venv/bin/python -m alua cognition-status
+```
+
+Autoritativní dokument: `docs/COGNITIVE_CORE_V5.md`.
+
+Důležitý invariant: V5 stále nemá World XYZ, technické názvy item/node, skrytou mapu ani recepty. Návrat používá pouze vlastní route memory a perceptuální signatures.
+
+
 ## Navigační field fix – 2026-10-07
 
 Po V2/V3 field testu se Alua pohybovala, ale odrážela se v malém prostoru. Nešlo pouze o planner problém.

@@ -9,6 +9,7 @@ from typing import Any
 
 from .bridge_client import BridgeClient
 from .config import Config
+from .cognition import CognitiveCore, CognitiveSnapshot
 from .errors import BridgeHttpError, BridgeUnavailable, ProtocolError
 from .executive import ExecutiveController
 from .goals import GoalCandidate, IntrinsicCurriculum, ReflexGoalSelector
@@ -51,6 +52,7 @@ class Runtime:
         executive: ExecutiveController | None = None,
         topology: PerceptualTopology | None = None,
         utility: AdaptiveUtilityModel | None = None,
+        cognitive: CognitiveCore | None = None,
     ):
         self.config = config
         self.store = store
@@ -63,6 +65,7 @@ class Runtime:
         self.executive = executive or ExecutiveController(fallback_policy=self.policy)
         self.topology = topology or PerceptualTopology()
         self.utility = utility or AdaptiveUtilityModel()
+        self.cognitive = cognitive or CognitiveCore()
         self.store.ensure_agent(config.agent_id)
         deactivated = self.skills.reconcile(self.store, config.agent_id)
         if deactivated:
@@ -97,6 +100,7 @@ class Runtime:
                 continue
 
             succeeded = motor_success(event)
+            quality = motor_quality(event)
             action = expectation.get("action")
             if isinstance(action, dict):
                 self.topology.finish_action(
@@ -106,11 +110,21 @@ class Runtime:
                     succeeded,
                     frame,
                 )
+            self.cognitive.finish_action(
+                expectation=expectation,
+                event=event,
+                frame=frame,
+                supported=succeeded,
+                progress=quality,
+                memory=self.memory,
+                store=self.store,
+                agent_id=self.config.agent_id,
+            )
             self.executive.on_outcome(
                 expectation,
                 succeeded,
                 frame,
-                quality=motor_quality(event),
+                quality=quality,
             )
             learn_from_motor_outcome(
                 self.store,
@@ -147,10 +161,81 @@ class Runtime:
         frame: PerceptionFrame,
         novel_appearance_ids: set[str],
         session_id: str,
+        cognitive_snapshot: CognitiveSnapshot | None = None,
     ) -> tuple[GoalCandidate, bool]:
         reflex_goal = self.reflex.choose(frame, self.memory)
         if reflex_goal is not None:
             return reflex_goal, True
+
+        if cognitive_snapshot is not None:
+            directive = cognitive_snapshot.spatial_directive
+            if directive is not None and directive.confidence >= 0.60:
+                return (
+                    GoalCandidate(
+                        key=f"spatial:backtrack:{directive.target_place or 'previous'}",
+                        kind="spatial_backtrack",
+                        priority=min(1.20, 0.86 + 0.28 * directive.confidence),
+                        reason={
+                            "selector": "cognitive_core",
+                            "phase": directive.kind,
+                            "yaw_delta_rad": directive.yaw_delta_rad,
+                            "maneuver": directive.maneuver,
+                            "target_place": directive.target_place,
+                            "confidence": directive.confidence,
+                            "meta_reasons": list(cognitive_snapshot.meta.reasons),
+                        },
+                    ),
+                    False,
+                )
+            if (
+                cognitive_snapshot.deliberative_action is not None
+                and cognitive_snapshot.meta.stagnation >= 0.52
+            ):
+                deliberation = cognitive_snapshot.deliberative_action.get(
+                    "_deliberation",
+                    {},
+                )
+                return (
+                    GoalCandidate(
+                        key=f"deliberate:{cognitive_snapshot.context_signature}",
+                        kind="deliberate_navigation",
+                        priority=min(
+                            1.05,
+                            0.72 + 0.30 * cognitive_snapshot.meta.stagnation,
+                        ),
+                        reason={
+                            "selector": "cognitive_core",
+                            "action": {
+                                "type": cognitive_snapshot.deliberative_action.get("type"),
+                                "parameters": cognitive_snapshot.deliberative_action.get("parameters"),
+                            },
+                            "deliberation": deliberation,
+                            "meta_reasons": list(cognitive_snapshot.meta.reasons),
+                        },
+                    ),
+                    False,
+                )
+            if cognitive_snapshot.experiment is not None:
+                experiment = cognitive_snapshot.experiment
+                return (
+                    GoalCandidate(
+                        key=f"inspect:{experiment.target_signature}",
+                        kind="inspect_object",
+                        priority=min(
+                            0.98,
+                            0.62 + 0.30 * experiment.information_value,
+                        ),
+                        target_ref=experiment.target_ref,
+                        target_signature=experiment.target_signature,
+                        reason={
+                            "selector": "active_experiment",
+                            "experiment_kind": experiment.kind,
+                            "information_value": experiment.information_value,
+                            "experiment_reason": experiment.reason,
+                        },
+                    ),
+                    False,
+                )
         previous = self.store.latest_submitted_goal(
             self.config.agent_id,
             session_id,
@@ -161,12 +246,38 @@ class Runtime:
 
         def rank(candidate: GoalCandidate) -> float:
             stats = self.store.goal_stats(self.config.agent_id, candidate.key)
-            return self.utility.evaluate(
+            score = self.utility.evaluate(
                 candidate,
                 stats=stats,
                 memory=self.memory,
                 information_need=information_need,
             ).total
+            if cognitive_snapshot is not None:
+                drives = cognitive_snapshot.drives
+                if candidate.kind == "explore":
+                    score += 0.24 * drives.exploration
+                    score -= 0.18 * drives.frustration
+                    if any(
+                        mission.kind == "open_world_learning"
+                        and mission.stage == "active"
+                        for mission in cognitive_snapshot.missions
+                    ):
+                        score += 0.10
+                elif candidate.kind == "inspect_object":
+                    score += 0.22 * drives.curiosity
+                elif candidate.kind in {
+                    "scan_obstacle",
+                    "scan_recovery",
+                    "scan_periodic",
+                }:
+                    score += 0.16 * cognitive_snapshot.meta.uncertainty
+                elif candidate.kind in {
+                    "satisfy_hunger",
+                    "satisfy_thirst",
+                    "recover_stamina",
+                }:
+                    score += 0.25 * drives.homeostasis
+            return score
 
         return (
             self.curriculum.choose(
@@ -198,6 +309,7 @@ class Runtime:
             self.memory.clear()
             self.executive.reset_session()
             self.topology.reset_session()
+            self.cognitive.reset_session()
 
         state = self.store.state(self.config.agent_id)
         cursor = int(state["last_observation_sequence"])
@@ -205,6 +317,7 @@ class Runtime:
         observations = self.bridge.observations(cursor)
         latest: PerceptionFrame | None = None
         latest_novel: set[str] = set()
+        latest_cognitive: CognitiveSnapshot | None = None
         processed = 0
         outcomes_resolved = 0
 
@@ -228,6 +341,16 @@ class Runtime:
                         self.config.agent_id,
                     )
                 )
+                latest_cognitive = self.cognitive.observe(
+                    frame=frame,
+                    novel_appearance_ids=current_novel,
+                    memory=self.memory,
+                    world_model=self.executive.world_model,
+                    topology=self.topology,
+                    store=self.store,
+                    agent_id=self.config.agent_id,
+                    session_id=session_id,
+                )
                 latest = frame
                 latest_novel = current_novel
                 cursor = frame.sequence
@@ -244,7 +367,12 @@ class Runtime:
         if self.store.pending_expectation_count(self.config.agent_id, session_id) > 0:
             return StepResult(session_id, changed, processed, outcomes_resolved, False, None)
 
-        goal, is_reflex = self._select_goal(latest, latest_novel, session_id)
+        goal, is_reflex = self._select_goal(
+            latest,
+            latest_novel,
+            session_id,
+            latest_cognitive,
+        )
         skill_key: str | None = None
 
         retrieved = None
@@ -286,6 +414,8 @@ class Runtime:
         rationale = dict(intent.rationale)
         if goal.reason:
             rationale["goal_reason"] = goal.reason
+        if latest_cognitive is not None:
+            rationale["cognitive_state"] = latest_cognitive.diagnostics()
 
         self.store.record_decision(
             decision_id,
@@ -328,6 +458,7 @@ class Runtime:
         )
         self.executive.on_submitted(intent, goal, latest.sequence)
         self.topology.begin_action(action)
+        self.cognitive.begin_action(action)
         self.store.record_goal_attempt(
             agent_id=self.config.agent_id,
             goal_key=goal.key,

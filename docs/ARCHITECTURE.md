@@ -270,3 +270,39 @@ Beliefs mají od schema v4 samostatné `belief_evidence`, takže lze auditovat k
 Offline `benchmark` kombinuje decision/outcome trajectory s replay uložených sensory episodes.
 
 Podrobnosti: `docs/ADAPTIVE_COGNITION_V3.md`.
+
+
+## Cognitive Core V5 – vyšší kognitivní smyčka
+
+V5 rozšiřuje V2/V3, ale nemění autoritu vrstev.
+
+```text
+PerceptionFrame
+  -> SceneIntegrator + TemporalModel
+  -> AttentionSystem
+  -> ObjectMemory
+  -> EgocentricWorldModel + PerceptualTopology
+  -> SpatialMemory (route + relative odometry)
+  -> Metacognition
+  -> DriveSystem
+  -> Missions / ProspectiveMemory / ExperimentPlanner
+  -> Reflex + curriculum + cognitive goal arbitration
+  -> BoundedPlanner / ExecutiveController
+  -> PredictiveModel + RiskModel counterfactual scoring
+  -> primitive action
+  -> future sensory outcome
+  -> Prediction/Risk/Self/Causal/Strategy learning
+  -> periodic Consolidation + Concepts
+```
+
+### Nové invarianty
+
+- prostorová paměť používá pouze vlastní perceptuální signatures a relativní odometrii, nikdy World XYZ;
+- dead-end recovery má preferovat zapamatovaný návrat před náhodným rozhlížením;
+- prediction není fakt; je confidence-weighted hypotéza opravovaná outcome evidencí;
+- metakognice smí změnit strategii, ale nesmí sama vytvářet externí world truth;
+- social testimony je oddělené od self-verified belief;
+- mission může přežít krátkodobé přerušení potřebou, ale každá fyzická akce zůstává bounded a znovu ověřená čerstvým perceptem;
+- contextual terrain/motor zkušenost se nesmí promovat do univerzálního skillu bez preconditions.
+
+Autoritativní detail: `docs/COGNITIVE_CORE_V5.md`.

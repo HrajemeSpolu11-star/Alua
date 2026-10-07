@@ -1,5 +1,33 @@
 # Implementační deník Alua AI
 
+## 2026-10-07 – Cognitive Core V5 po field testu slepé uličky
+
+Reálný běh ukázal zásadní omezení V2/V3/V4: lokální critic poznal nulový progress a uměl reorientovat, ale agent si nepamatoval, kudy do slepé větve přišel. Výsledkem bylo zmatené lokální rozhlížení místo smysluplného návratu.
+
+Implementován Cognitive Core V5:
+- attention/surprise;
+- scene + temporal integration;
+- object permanence;
+- route memory a explicitní remembered-route backtracking;
+- relativní odometrie bez World XYZ;
+- predictive model + prediction error;
+- risk/self/causal models;
+- metacognition;
+- regulatory drives;
+- active experiments;
+- prospective memory a missions;
+- consolidation/forgetting;
+- concept formation a strategy transfer;
+- social/testimony hooks;
+- explainable cognitive state v decision rationale.
+
+SQLite schema je v5 a před migrací starší DB vytváří backup. Nové higher-cognition persistence používá sanitized `cognitive_records`.
+
+Cílem této změny není přidat další skriptované „když překážka, udělej X“, ale dát executive mechanismy, které poznají stagnaci, vzpomenou si na vlastní cestu, porovnají alternativy a učí se z prediction error.
+
+Autoritativní popis: `docs/COGNITIVE_CORE_V5.md`.
+
+
 ## 2026-10-07 – field fix: move success nebyl skutečný navigační pokrok
 
 Po nasazení V2/V3 se v živém testu objevila dlouhá série `move`, ale tělo se drželo kolem jedné kostky. World přitom hlásil úspěch.
