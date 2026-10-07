@@ -146,17 +146,19 @@ class SkillLibrary:
             parameters = step.get("parameters", {})
             forward = parameters.get("forward")
             strafe = parameters.get("strafe")
+            mode = parameters.get("mode", "walk")
             if (
-                not isinstance(forward, (int, float))
+                mode != "walk"
+                or not isinstance(forward, (int, float))
                 or isinstance(forward, bool)
                 or not isinstance(strafe, (int, float))
                 or isinstance(strafe, bool)
                 or float(forward) < 0.5
                 or abs(float(strafe)) > 0.05
             ):
-                # Obstacle-bypass je kontextová motorická reakce, ne univerzální
-                # explore skill. Bez precondition modelu by se mohl přenést do
-                # otevřeného prostoru a vytvořit nový stereotyp.
+                # Obstacle-bypass i terénní režimy (jump/vault/climb/swim/...)
+                # jsou kontextové motorické reakce, ne univerzální explore skill.
+                # Bez precondition modelu se nesmí přenést do jiného terénu.
                 return None
         target_signature = expectation.get("target_signature")
         if not isinstance(target_signature, str):

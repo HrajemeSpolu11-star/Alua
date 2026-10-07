@@ -182,6 +182,10 @@ class Runtime:
                 else None,
                 information_need=information_need,
                 candidate_ranker=rank,
+                belief_lookup=lambda key: self.store.belief(
+                    self.config.agent_id,
+                    key,
+                ),
             ),
             False,
         )

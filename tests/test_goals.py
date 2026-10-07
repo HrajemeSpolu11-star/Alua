@@ -313,5 +313,167 @@ class GoalTests(unittest.TestCase):
         self.assertGreater(goal.priority, 0.5)
 
 
+    def test_low_breath_underwater_preempts_damage_free_state(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 50,
+            "simulation_time": 50.0,
+            "channels": {
+                "contact": {"damage_signal": 0},
+                "vitals": {"breath_fraction": 0.2},
+                "locomotion": {"head_submerged_signal": 1},
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+        goal = ReflexGoalSelector().choose(current, memory)
+        self.assertIsNotNone(goal)
+        self.assertEqual(goal.kind, "survive_breath")
+
+    def test_thirst_approaches_visible_liquid_before_drinking(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 51,
+            "simulation_time": 51.0,
+            "channels": {
+                "vitals": {
+                    "thirst_signal": 0.8,
+                    "hunger_signal": 0.0,
+                    "stamina_fraction": 0.8,
+                    "fatigue_signal": 0.1,
+                    "breath_fraction": 1.0,
+                },
+                "vision": {"rays": [{
+                    "distance_fraction": 0.4,
+                    "appearance_id": "p-liquid",
+                    "blocks_motion": False,
+                    "liquid": True,
+                    "target_ref": "t51_1",
+                }]},
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+        goal = IntrinsicCurriculum().choose(
+            current,
+            set(),
+            memory,
+            lambda _: None,
+            information_need=0.0,
+        )
+        self.assertEqual(goal.kind, "satisfy_thirst")
+        self.assertEqual(goal.reason["phase"], "approach")
+        self.assertEqual(goal.target_signature, "p-liquid")
+
+    def test_hunger_uses_inventory_experiment_before_world_mining(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 52,
+            "simulation_time": 52.0,
+            "channels": {
+                "vitals": {
+                    "hunger_signal": 0.8,
+                    "thirst_signal": 0.0,
+                    "stamina_fraction": 0.8,
+                    "fatigue_signal": 0.1,
+                    "breath_fraction": 1.0,
+                },
+                "inventory": {
+                    "load_fraction": 0.1,
+                    "slots": [{
+                        "slot_index": 4,
+                        "appearance_id": "p-unknown",
+                        "count": 1,
+                        "mass_fraction": 0.03,
+                    }],
+                },
+                "vision": {"rays": [{"distance_fraction": 1.0, "empty": True}]},
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+        goal = IntrinsicCurriculum().choose(
+            current,
+            set(),
+            memory,
+            lambda _: None,
+            information_need=0.0,
+        )
+        self.assertEqual(goal.kind, "satisfy_hunger")
+        self.assertEqual(goal.reason["phase"], "consume_inventory")
+        self.assertEqual(goal.reason["slot_index"], 4)
+
+    def test_collect_follows_completed_inspection_phase(self) -> None:
+        current = make_frame(53, distance=0.05, appearance="p-object", blocks_motion=False)
+        memory = WorkingMemory()
+        memory.add(current)
+
+        def inspected_stats(key: str):
+            if key == "inspect:p-object":
+                return {"attempts": 3, "successes": 3, "failures": 0}
+            return None
+
+        goal = IntrinsicCurriculum().choose(
+            current,
+            set(),
+            memory,
+            inspected_stats,
+            information_need=0.0,
+        )
+        self.assertEqual(goal.kind, "collect_object")
+        self.assertEqual(goal.target_signature, "p-object")
+
+    def test_mining_requires_need_and_failed_pickup_evidence(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 54,
+            "simulation_time": 54.0,
+            "channels": {
+                "vitals": {
+                    "hunger_signal": 0.9,
+                    "thirst_signal": 0.0,
+                    "stamina_fraction": 0.8,
+                    "fatigue_signal": 0.1,
+                    "breath_fraction": 1.0,
+                },
+                "inventory": {"load_fraction": 0.0, "slots": []},
+                "vision": {"rays": [{
+                    "distance_fraction": 0.05,
+                    "appearance_id": "p-food",
+                    "blocks_motion": True,
+                    "liquid": False,
+                    "target_ref": "t54_1",
+                }]},
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+
+        def stats(key: str):
+            if key == "need:pickup:p-food":
+                return {"attempts": 2, "successes": 0, "failures": 2}
+            return None
+
+        def belief(key: str):
+            if key == "appearance:p-food:consume:nutrition_effect":
+                return {"support_count": 2, "contradiction_count": 0}
+            return None
+
+        goal = IntrinsicCurriculum().choose(
+            current,
+            set(),
+            memory,
+            stats,
+            information_need=0.0,
+            belief_lookup=belief,
+        )
+        self.assertEqual(goal.kind, "acquire_required_resource")
+        self.assertEqual(goal.reason["phase"], "mine_required")
+
+
 if __name__ == "__main__":
     unittest.main()

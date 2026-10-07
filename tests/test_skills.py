@@ -234,6 +234,39 @@ class SkillLibraryTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_jump_is_not_learned_as_context_free_explore_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            library = SkillLibrary()
+            expectation = {
+                "goal_kind": "explore",
+                "target_signature": None,
+                "action": {
+                    "type": "move",
+                    "parameters": {
+                        "mode": "jump",
+                        "forward": 1.0,
+                        "strafe": 0.0,
+                        "vertical": 0.0,
+                        "duration_s": 0.45,
+                        "speed_fraction": 0.8,
+                    },
+                },
+            }
+            try:
+                self.assertIsNone(
+                    library.learn(
+                        store,
+                        "alua:1",
+                        expectation,
+                        supported=True,
+                        sequence=1,
+                    )
+                )
+                self.assertEqual(store.summary("alua:1")["skills"], 0)
+            finally:
+                store.close()
+
     def test_reconcile_deactivates_legacy_scan_skill(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = Store(Path(tmp) / "alua.sqlite3")

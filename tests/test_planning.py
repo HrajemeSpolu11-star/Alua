@@ -61,5 +61,35 @@ class PlanningTests(unittest.TestCase):
         )
 
 
+    def test_body_need_goals_have_bounded_non_exploration_skills(self) -> None:
+        frame, model = blocked_model()
+        planner = BoundedPlanner()
+        surface = planner.plan(
+            GoalCandidate("survive:breath", "survive_breath", 1.25),
+            frame,
+            model,
+            Critique(False, False, ()),
+        )
+        self.assertEqual(surface.skill_name, "survive_surface")
+        self.assertEqual(tuple(step.kind for step in surface.steps), ("surface",))
+
+        consume = planner.plan(
+            GoalCandidate("need:consume:pfood", "satisfy_hunger", 0.9),
+            frame,
+            model,
+            Critique(False, False, ()),
+        )
+        self.assertEqual(consume.skill_name, "satisfy_body_need")
+
+        mining = planner.plan(
+            GoalCandidate("need:mine:pfood", "acquire_required_resource", 0.9),
+            frame,
+            model,
+            Critique(False, False, ()),
+        )
+        self.assertEqual(mining.skill_name, "acquire_required_resource")
+        self.assertEqual(tuple(step.kind for step in mining.steps), ("resource",))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -25,6 +25,36 @@ class SkillGraph:
 
     def __init__(self) -> None:
         self._skills = {
+            "survive_surface": SkillDefinition(
+                "survive_surface",
+                frozenset({"survive_breath"}),
+                ("surface",),
+                "swim upward when breath becomes critical",
+            ),
+            "recover_body": SkillDefinition(
+                "recover_body",
+                frozenset({"recover_stamina"}),
+                ("recover",),
+                "reduce exertion and recover bodily capacity",
+            ),
+            "satisfy_body_need": SkillDefinition(
+                "satisfy_body_need",
+                frozenset({"satisfy_thirst", "satisfy_hunger"}),
+                ("need",),
+                "act on thirst or hunger using current sensory evidence and learned effects",
+            ),
+            "collect_observed_object": SkillDefinition(
+                "collect_observed_object",
+                frozenset({"collect_object"}),
+                ("collect",),
+                "store one inspected reachable object for later experimentation",
+            ),
+            "acquire_required_resource": SkillDefinition(
+                "acquire_required_resource",
+                frozenset({"acquire_required_resource"}),
+                ("resource",),
+                "physically break a currently needed target only when a need-driven goal requests it",
+            ),
             "survive_retreat": SkillDefinition(
                 "survive_retreat",
                 frozenset({"survive_damage"}),
@@ -72,8 +102,18 @@ class SkillGraph:
         model: EgocentricWorldModel,
         critique: Critique,
     ) -> SkillDefinition:
+        if goal.kind == "survive_breath":
+            return self.get("survive_surface")
         if goal.kind == "survive_damage":
             return self.get("survive_retreat")
+        if goal.kind == "recover_stamina":
+            return self.get("recover_body")
+        if goal.kind in {"satisfy_thirst", "satisfy_hunger"}:
+            return self.get("satisfy_body_need")
+        if goal.kind == "collect_object":
+            return self.get("collect_observed_object")
+        if goal.kind == "acquire_required_resource":
+            return self.get("acquire_required_resource")
         if goal.kind == "inspect_object":
             return self.get("inspect_by_touch")
         if goal.kind in {"scan_obstacle", "scan_recovery", "scan_periodic"}:
