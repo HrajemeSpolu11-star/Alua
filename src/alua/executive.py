@@ -32,6 +32,7 @@ class ExecutiveController:
         self.active_plan: BehaviorPlan | None = None
         self.step_index = 0
         self._navigation_priors: dict[str, float] = {}
+        self._escape_turn_index = 0
 
     def reset_session(self) -> None:
         self.world_model.reset()
@@ -40,6 +41,7 @@ class ExecutiveController:
         self.active_plan = None
         self.step_index = 0
         self._navigation_priors = {}
+        self._escape_turn_index = 0
 
     def set_navigation_priors(self, penalties: dict[str, float] | None) -> None:
         self._navigation_priors = {
@@ -79,12 +81,16 @@ class ExecutiveController:
     ) -> BehaviorPlan:
         critique = self.critic.assess()
         plan = self.active_plan
+        critique_requires_new_plan = (
+            critique.force_replan
+            and (plan is None or plan.skill_name != "escape_stagnation")
+        )
         incompatible = (
             plan is None
             or self.step_index >= len(plan.steps)
             or plan.goal_key != goal.key
             or plan.goal_kind != goal.kind
-            or critique.force_replan
+            or critique_requires_new_plan
         )
         if not incompatible and plan is not None:
             step = plan.steps[self.step_index].kind
@@ -127,6 +133,41 @@ class ExecutiveController:
 
         if step.kind in {"retreat", "inspect", "scan"}:
             intent = self.fallback_policy.choose(frame, goal, memory)
+        elif step.kind == "reorient_escape":
+            left_score = (
+                self.world_model.sector_score("left")
+                - self._navigation_priors.get("left", 0.0)
+            )
+            right_score = (
+                self.world_model.sector_score("right")
+                - self._navigation_priors.get("right", 0.0)
+            )
+            if abs(left_score - right_score) < 0.05:
+                turn_left = self._escape_turn_index % 2 == 0
+            else:
+                turn_left = left_score > right_score
+            self._escape_turn_index += 1
+            yaw_delta = 0.85 if turn_left else -0.85
+            intent = ActionIntent(
+                action_type="look",
+                parameters={
+                    "yaw_delta_rad": yaw_delta,
+                    "pitch_delta_rad": 0.0,
+                },
+                duration=None,
+                target_ref=None,
+                target_signature=None,
+                rationale={
+                    "policy": "stagnation_reorientation",
+                    "goal_key": goal.key,
+                    "goal_kind": goal.kind,
+                    "goal_priority": goal.priority,
+                    "observation_sequence": frame.sequence,
+                    "turn": "left" if turn_left else "right",
+                    "left_score": round(left_score, 4),
+                    "right_score": round(right_score, 4),
+                },
+            )
         else:
             if step.kind == "navigate_lateral":
                 mode = "lateral"
@@ -192,11 +233,16 @@ class ExecutiveController:
             # current macro plan; never advance a stale macro from its outcome.
             self.active_plan = None
             self.step_index = 0
-        self.critic.record_submission(intent.action_type, goal.kind, sequence)
+        maneuver: str | None = None
         if intent.action_type == "move":
-            self.navigator.record_maneuver(
-                self.navigator.maneuver_from_parameters(intent.parameters)
-            )
+            maneuver = self.navigator.maneuver_from_parameters(intent.parameters)
+            self.navigator.record_maneuver(maneuver)
+        self.critic.record_submission(
+            intent.action_type,
+            goal.kind,
+            sequence,
+            maneuver=maneuver,
+        )
 
     def on_rejected(self, goal: GoalCandidate, reason: str) -> None:
         if self.active_plan and self.active_plan.goal_key == goal.key:
@@ -208,11 +254,12 @@ class ExecutiveController:
         expectation: dict[str, Any],
         supported: bool,
         frame: PerceptionFrame | None = None,
+        quality: float | None = None,
     ) -> None:
         action = expectation.get("action")
         if isinstance(action, dict):
-            self.navigator.observe_outcome(action, supported)
-            self.critic.record_outcome(action, supported)
+            self.navigator.observe_outcome(action, supported, quality)
+            self.critic.record_outcome(action, supported, quality)
             if supported and action.get("type") == "look":
                 self.world_model.invalidate_view()
 
