@@ -101,6 +101,7 @@ Nejdůležitější dokument pro nový chat:
 Dále:
 - docs/E2E_RUNTIME_2026-10-07.md
 - docs/AUDIT_BRAIN_2026-10-07.md
+- docs/INCIDENT_2026-10-07_ONE_BLOCK_BOUNCE.md
 - docs/COGNITIVE_ARCHITECTURE_V2.md
 - docs/ADAPTIVE_COGNITION_V3.md
 - docs/OPEN_SOURCE_REFERENCE_AUDIT_2026-10-07.md
