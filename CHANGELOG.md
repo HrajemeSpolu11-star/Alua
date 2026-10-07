@@ -1,5 +1,20 @@
 # Přehled změn
 
+## 2026-10-07 – Adaptive Cognition V3
+
+- SQLite schema zvýšeno na v4; před migrací starší DB se automaticky vytváří backup;
+- přidán `AdaptiveUtilityModel` pro evidence-weighted ranking intrinsic goals;
+- přidána persistentní `PerceptualTopology` bez absolutních souřadnic a bez World truth;
+- ukládají se perceptuální place signatures a transition evidence pro `forward/left/right/back`;
+- LocalNavigator používá persistentní maneuver penalties z vlastních předchozích outcomes;
+- po úspěšném `look` se invaliduje starý egocentrický directional cache;
+- beliefs dostaly samostatnou `belief_evidence` provenance s session/observation/decision vazbou;
+- přidán bounded sensory replay z uložených episodes;
+- přidán CLI `alua benchmark` s nenulovým exit code při behaviorální regresi;
+- summary nově ukazuje počty belief evidence, perceptual places a transitions;
+- doplněny unit testy a dokumentace V3.
+
+
 ## 2026-10-07 – Cognitive Architecture V2
 
 - přidán bounded egocentrický world model pouze z vlastních sensory frames;
