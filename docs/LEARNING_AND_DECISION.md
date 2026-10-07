@@ -28,6 +28,19 @@ Budoucí observations mohou expectation:
 - vyvrátit;
 - nechat nerozhodnuté.
 
+## Anti-loop invariant
+
+Informační akce nesmí samy sebe donekonečna udržovat pouze proto, že jejich motorické provedení bylo úspěšné.
+
+Aktuální V1 proto vyžaduje:
+- `scan_recovery` pouze jako reakci na novější neúspěšný exploration pokus;
+- `scan_obstacle` nejvýše jednou před intervenujícím motorickým exploration pokusem;
+- scan/look není reusable procedural skill;
+- reusable move skill se nepoužije, pokud aktuální percept hlásí blízkou centrální překážku;
+- context-specific bypass se bez explicitního precondition modelu nepromuje na generic skill.
+
+Motor success znamená, že se primitivní akce fyzicky provedla. Není automatickým důkazem, že informační nebo navigační cíl byl strategicky dokončen.
+
 ## Exploration
 
 Úplně neznámý agent potřebuje schopnost bezpečně zkoušet.
