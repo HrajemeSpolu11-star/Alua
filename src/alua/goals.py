@@ -79,6 +79,7 @@ class IntrinsicCurriculum:
         memory: WorkingMemory,
         goal_stats: Callable[[str], dict[str, Any] | None],
         previous_goal_kind: str | None = None,
+        previous_action_type: str | None = None,
         information_need: float | None = None,
         candidate_ranker: Callable[[GoalCandidate], float] | None = None,
     ) -> GoalCandidate:
@@ -86,7 +87,10 @@ class IntrinsicCurriculum:
         nearest = self._nearest_target(frame, require_target_ref=True)
         explore_stats = goal_stats("explore:open")
         scan_kinds = {"scan_obstacle", "scan_recovery", "scan_periodic"}
-        scan_allowed = previous_goal_kind not in scan_kinds
+        scan_allowed = (
+            previous_goal_kind not in scan_kinds
+            and previous_action_type != "look"
+        )
 
         if (
             nearest
