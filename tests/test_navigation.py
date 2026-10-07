@@ -49,6 +49,18 @@ class NavigationTests(unittest.TestCase):
         self.assertEqual(choice.maneuver, "left")
         self.assertLess(choice.strafe, 0)
 
+    def test_partial_progress_is_treated_as_navigation_failure(self) -> None:
+        navigator = LocalNavigator()
+        world = model()
+        partial_action = {
+            "type": "move",
+            "parameters": {"forward": 0.18, "strafe": -0.78},
+        }
+        navigator.observe_outcome(partial_action, False, quality=0.28)
+        navigator.observe_outcome(partial_action, False, quality=0.31)
+        choice = navigator.choose(world, mode="lateral")
+        self.assertNotEqual(choice.maneuver, "left")
+
     def test_failed_maneuver_is_penalized_and_replanned(self) -> None:
         navigator = LocalNavigator()
         world = model()

@@ -5,10 +5,17 @@ from typing import Any
 from .store import Store
 
 
+def motor_quality(event: dict[str, Any]) -> float:
+    progress = event.get("progress_signal", event.get("success_signal"))
+    if not isinstance(progress, (int, float)) or isinstance(progress, bool):
+        return 0.0
+    return max(0.0, min(1.0, float(progress)))
+
+
 def motor_success(event: dict[str, Any]) -> bool:
-    success = event.get("success_signal")
     feedback = event.get("feedback_signal")
-    return isinstance(success, (int, float)) and success >= 0.5 and feedback not in {
+    return motor_quality(event) >= 0.55 and feedback not in {
+        "partial_effect",
         "no_effect",
         "resistance",
         "impact_resisted",

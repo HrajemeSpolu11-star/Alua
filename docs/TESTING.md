@@ -152,3 +152,27 @@ Po live testu použít:
 Exit code `0` znamená, že aktuální uložená session prošla acceptance checks. Nenulový exit code znamená behaviorální regresi nebo nedostatek evidence; JSON výstup přesně ukáže neúspěšné checks.
 
 Migrace schema v3 -> v4 musí zachovat staré episodes/beliefs/skills a vytvořit pre-v4 backup.
+
+## One-block stagnation acceptance
+
+Po opravě motor progress kontraktu je behaviorální acceptance přísnější.
+
+`evaluate` / `benchmark` nyní rozlišuje:
+- dlouhou kvalitní cestu tvořenou mnoha `move` akcemi;
+- dlouhou low-progress sérii, kdy se tělo pouze odráží nebo posouvá bez cíleného postupu.
+
+Nové metriky:
+- `mean_move_progress`;
+- `low_progress_moves`;
+- `navigation_stagnation_detected`;
+- `longest_move_streak`.
+
+Unit testy navíc kontrolují:
+- `partial_effect` není motor success;
+- low-progress maneuver dostane vyšší navigation cost;
+- repeated successful forward travel není falešný stereotype;
+- stagnation vytvoří `reorient_escape -> navigate_escape -> navigate_frontier`;
+- force-replan nezničí právě probíhající escape plan;
+- libovolný předchozí physical `look` blokuje okamžitý scan.
+
+Field test musí používat současně odpovídající AluaWorld i Alua commit. Starý World neposkytuje graded progress a není validním testem této opravy.

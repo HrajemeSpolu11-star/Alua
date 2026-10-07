@@ -2,6 +2,26 @@
 
 Aktualizováno: 2026-10-07.
 
+## Navigační field fix – 2026-10-07
+
+Po V2/V3 field testu se Alua pohybovala, ale odrážela se v malém prostoru. Nešlo pouze o planner problém.
+
+Nalezeno:
+- AluaWorld movement success byl příliš benevolentní a neověřoval směr postupu;
+- left/right vision basis byl ve Worldu zrcadlený proti body locomotion;
+- critic neuměl rozlišit kvalitní dlouhou chůzi od low-progress move loopu;
+- escape plan neuměl reorientovat yaw.
+
+Aktuální řešení:
+- graded `progress_signal` / `slip_signal`;
+- `partial_effect`;
+- motor success od 55 % projected progress;
+- maneuver-specific stagnation;
+- `reorient_escape -> navigate_escape -> navigate_frontier`;
+- scan gate respektuje každý physical look.
+
+Pro správný field test je nutné aktualizovat **AluaWorld i Alua**. Bridge kontrakt se nemění.
+
 ## Adaptive Cognition V3 – 2026-10-07
 
 Nad Cognitive V2 byla doplněna dlouhodobá adaptivní vrstva:

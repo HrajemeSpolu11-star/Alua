@@ -1,5 +1,19 @@
 # Přehled změn
 
+## 2026-10-07 – oprava one-block navigation stagnation
+
+- terénní test odhalil, že dlouhá série `move` mohla vypadat úspěšně, přestože tělo prakticky neopouštělo jeden malý prostor;
+- Alua nově zachovává `progress_signal` a `slip_signal` z World motor feedbacku;
+- `motor_success` vyžaduje alespoň 55 % skutečného projected progress a odmítá `partial_effect`;
+- LocalNavigator penalizuje manévry podle kvality skutečného progressu, ne pouze binárního outcome;
+- BehaviorCritic rozlišuje normální dlouhou chůzi od low-progress stagnace a sleduje repeated maneuver místo samotného action type `move`;
+- `escape_stagnation` nyní začíná fyzickou reorientací těla před escape pohybem;
+- aktivní escape plan se nezruší okamžitě stejným critic signálem, který jej vytvořil;
+- jakýkoli předchozí fyzický `look` blokuje okamžitý další scan;
+- offline evaluator reportuje `mean_move_progress`, `low_progress_moves` a `navigation_stagnation_detected`;
+- detail: `docs/INCIDENT_2026-10-07_ONE_BLOCK_BOUNCE.md`.
+
+
 ## 2026-10-07 – Adaptive Cognition V3
 
 - SQLite schema zvýšeno na v4; před migrací starší DB se automaticky vytváří backup;

@@ -114,6 +114,10 @@ def _motor_events(channels: dict[str, Any]) -> tuple[dict[str, Any], ...]:
             {
                 "source_sequence": source_sequence,
                 "success_signal": _number(event.get("success_signal")) or 0.0,
+                "progress_signal": _number(event.get("progress_signal"))
+                if _number(event.get("progress_signal")) is not None
+                else (_number(event.get("success_signal")) or 0.0),
+                "slip_signal": _number(event.get("slip_signal")) or 0.0,
                 "feedback_signal": event.get("feedback_signal")
                 if isinstance(event.get("feedback_signal"), str)
                 else "no_effect",

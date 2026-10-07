@@ -58,8 +58,8 @@ class SkillGraph:
             "escape_stagnation": SkillDefinition(
                 "escape_stagnation",
                 frozenset({"explore"}),
-                ("navigate_escape", "navigate_frontier"),
-                "break a repeated-failure pattern before resuming exploration",
+                ("reorient_escape", "navigate_escape", "navigate_frontier"),
+                "rotate the body toward a better frontier, escape, then resume exploration",
             ),
         }
 

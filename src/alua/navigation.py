@@ -58,23 +58,36 @@ class LocalNavigator:
             return "left"
         return "forward"
 
-    def observe_outcome(self, action: dict[str, Any], supported: bool) -> None:
+    def observe_outcome(
+        self,
+        action: dict[str, Any],
+        supported: bool,
+        quality: float | None = None,
+    ) -> None:
         if action.get("type") != "move":
             return
         parameters = action.get("parameters")
         if not isinstance(parameters, dict):
             return
         maneuver = self.maneuver_from_parameters(parameters)
-        if supported:
-            self._failure_penalty[maneuver] *= 0.35
+        if isinstance(quality, (int, float)) and not isinstance(quality, bool):
+            progress = max(0.0, min(1.0, float(quality)))
         else:
+            progress = 1.0 if supported else 0.0
+
+        if progress >= 0.75:
+            self._failure_penalty[maneuver] *= 0.25
+        elif progress >= 0.55 and supported:
+            self._failure_penalty[maneuver] *= 0.55
+        else:
+            deficit = 1.0 - progress
             self._failure_penalty[maneuver] = min(
-                2.0,
-                self._failure_penalty[maneuver] + 0.65,
+                2.5,
+                self._failure_penalty[maneuver] + 0.45 + 0.55 * deficit,
             )
         for key in self._failure_penalty:
             if key != maneuver:
-                self._failure_penalty[key] *= 0.92
+                self._failure_penalty[key] *= 0.90
 
     def record_maneuver(self, maneuver: str) -> None:
         if maneuver in self._failure_penalty:

@@ -262,3 +262,20 @@ poslední přijatý goal v aktuální session je scan
 Zdroj posledního goalu je tabulka `decisions` filtrovaná na aktuální `session_id` a pouze řádky s přiděleným `bridge_action_sequence`, tedy akce skutečně přijaté Bridge.
 
 Tím se anti-loop logika už neopírá o sequence hodnoty z jiné session a zároveň blokuje chaining mezi různými druhy scanů.
+
+## Dodatek – one-block bounce po Cognitive V2/V3
+
+Další field test ukázal opačný problém než původní look-loop: Alua téměř výhradně posílala `move`, World je potvrzoval jako úspěšné, ale fyzicky se pouze odrážela v malém prostoru.
+
+Audit odhalil kombinaci chyby sensory/motor contractu a kognitivní recovery:
+- World hodnotil displacement příliš benevolentně a bez projekce na intended direction;
+- vision left/right basis byl proti body locomotion basis zrcadlený;
+- critic používal action type streak místo skutečné move quality;
+- escape plan neuměl změnit yaw;
+- aktivní escape plan mohl být opakovaně přepsán stejným force-replan signálem.
+
+Kognitivní oprava nyní používá graded progress, maneuver-specific stagnation a explicitní `reorient_escape`.
+
+World-side oprava je samostatně dokumentována v AluaWorld `docs/INCIDENT_2026-10-07_NAVIGATION_STAGNATION.md`.
+
+Kompletní AI-side detail: `docs/INCIDENT_2026-10-07_ONE_BLOCK_BOUNCE.md`.

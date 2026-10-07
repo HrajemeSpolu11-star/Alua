@@ -1,5 +1,22 @@
 # Implementační deník Alua AI
 
+## 2026-10-07 – field fix: move success nebyl skutečný navigační pokrok
+
+Po nasazení V2/V3 se v živém testu objevila dlouhá série `move`, ale tělo se drželo kolem jedné kostky. World přitom hlásil úspěch.
+
+Oprava proběhla na obou stranách kontraktu:
+- World měří projected progress vůči intended direction a rozlišuje `partial_effect`;
+- Alua zachovává graded progress/slip;
+- motor success, goal evidence, skills a topology používají stejný přísnější success invariant;
+- critic hledá low-progress maneuver stagnation;
+- escape plan fyzicky změní yaw pomocí `reorient_escape`;
+- dlouhá kvalitní chůze už není sama o sobě action stereotype.
+
+Současně byl nalezen a ve Worldu opraven zrcadlený left/right vision basis proti locomotion basis.
+
+Detail: `docs/INCIDENT_2026-10-07_ONE_BLOCK_BOUNCE.md`.
+
+
 ## 2026-10-07 – Adaptive Cognition V3
 
 Po V2 byla implementována druhá část principů vytěžených z referenčních agentů: dlouhodobé cost evidence, trajectory replay a evidence-driven utility.

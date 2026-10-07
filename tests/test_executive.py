@@ -74,6 +74,57 @@ class ExecutiveTests(unittest.TestCase):
         self.assertEqual(second.rationale["plan_step_index"], 1)
         self.assertEqual(second.rationale["plan_step"], "navigate_frontier")
 
+    def test_low_progress_stagnation_reorients_then_keeps_escape_plan(self) -> None:
+        controller = ExecutiveController()
+        current = frame(10, blocked=True)
+        memory = WorkingMemory()
+        memory.add(current)
+        controller.observe(current)
+        goal = GoalCandidate("explore:open", "explore", 0.5)
+        failed_action = {
+            "type": "move",
+            "parameters": {"forward": 1.0, "strafe": 0.0},
+        }
+        for sequence in range(7, 10):
+            controller.critic.record_submission(
+                "move",
+                "explore",
+                sequence,
+                maneuver="forward",
+            )
+            controller.critic.record_outcome(
+                failed_action,
+                False,
+                quality=0.25,
+            )
+
+        first = controller.choose(current, goal, memory)
+        self.assertEqual(first.action_type, "look")
+        self.assertEqual(first.rationale["plan_skill"], "escape_stagnation")
+        self.assertEqual(first.rationale["plan_step"], "reorient_escape")
+
+        controller.on_submitted(first, goal, 10)
+        controller.on_outcome(
+            {
+                "goal_key": "explore:open",
+                "goal_kind": "explore",
+                "action": {
+                    "type": "look",
+                    "parameters": first.parameters,
+                },
+            },
+            True,
+            quality=1.0,
+        )
+
+        next_frame = frame(11, blocked=False)
+        memory.add(next_frame)
+        controller.observe(next_frame)
+        second = controller.choose(next_frame, goal, memory)
+        self.assertEqual(second.action_type, "move")
+        self.assertEqual(second.rationale["plan_skill"], "escape_stagnation")
+        self.assertEqual(second.rationale["plan_step"], "navigate_escape")
+
     def test_session_reset_clears_local_plan_and_navigation_history(self) -> None:
         controller = ExecutiveController()
         current = frame(1, blocked=True)
