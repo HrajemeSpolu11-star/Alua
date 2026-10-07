@@ -38,6 +38,40 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(metrics["move_success_rate"], 0.0)
 
 
+    def test_long_successful_travel_is_not_false_stereotype(self) -> None:
+        trace = [
+            {
+                "action_type": "move",
+                "goal_kind": "explore",
+                "status": "resolved",
+                "expectation_state": "resolved",
+                "outcome_success": True,
+                "progress_signal": 0.90,
+            }
+            for _ in range(10)
+        ]
+        metrics = evaluate_trace(trace)
+        self.assertEqual(metrics["longest_move_streak"], 10)
+        self.assertFalse(metrics["quality_flags"]["action_stereotype_detected"])
+        self.assertFalse(metrics["quality_flags"]["navigation_stagnation_detected"])
+
+    def test_low_progress_move_loop_is_detected(self) -> None:
+        trace = [
+            {
+                "action_type": "move",
+                "goal_kind": "explore",
+                "status": "resolved",
+                "expectation_state": "resolved",
+                "outcome_success": False,
+                "progress_signal": 0.30,
+            }
+            for _ in range(8)
+        ]
+        metrics = evaluate_trace(trace)
+        self.assertTrue(metrics["quality_flags"]["action_stereotype_detected"])
+        self.assertTrue(metrics["quality_flags"]["navigation_stagnation_detected"])
+        self.assertLess(metrics["mean_move_progress"], 0.55)
+
     def test_sensory_replay_and_acceptance_gate(self) -> None:
         episodes = [
             {
