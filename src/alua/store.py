@@ -827,6 +827,22 @@ class Store:
         result["reusable"] = bool(result["reusable"])
         return result
 
+    def latest_submitted_goal(
+        self,
+        agent_id: str,
+        session_id: str,
+    ) -> dict[str, Any] | None:
+        """Return the newest action that Bridge actually accepted in this session."""
+        with self._lock:
+            row = self._db.execute(
+                "SELECT goal_key,goal_kind,action_type,bridge_action_sequence,observation_sequence,created_at "
+                "FROM decisions WHERE agent_id=? AND session_id=? "
+                "AND bridge_action_sequence IS NOT NULL "
+                "ORDER BY bridge_action_sequence DESC LIMIT 1",
+                (agent_id, session_id),
+            ).fetchone()
+        return dict(row) if row else None
+
     def deactivate_reusable_skills_outside(
         self,
         agent_id: str,

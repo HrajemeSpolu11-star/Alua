@@ -122,16 +122,25 @@ class Runtime:
         self,
         frame: PerceptionFrame,
         novel_appearance_ids: set[str],
+        session_id: str,
     ) -> tuple[GoalCandidate, bool]:
         reflex_goal = self.reflex.choose(frame, self.memory)
         if reflex_goal is not None:
             return reflex_goal, True
+        previous = self.store.latest_submitted_goal(
+            self.config.agent_id,
+            session_id,
+        )
+        previous_goal_kind = previous.get("goal_kind") if previous else None
         return (
             self.curriculum.choose(
                 frame,
                 novel_appearance_ids,
                 self.memory,
                 lambda key: self.store.goal_stats(self.config.agent_id, key),
+                previous_goal_kind=previous_goal_kind
+                if isinstance(previous_goal_kind, str)
+                else None,
             ),
             False,
         )
@@ -180,7 +189,7 @@ class Runtime:
         if self.store.pending_expectation_count(self.config.agent_id, session_id) > 0:
             return StepResult(session_id, changed, processed, outcomes_resolved, False, None)
 
-        goal, is_reflex = self._select_goal(latest, latest_novel)
+        goal, is_reflex = self._select_goal(latest, latest_novel, session_id)
         skill_key: str | None = None
 
         retrieved = None if is_reflex else self.skills.retrieve(

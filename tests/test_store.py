@@ -179,6 +179,60 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_latest_submitted_goal_is_scoped_to_current_session(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            try:
+                store.apply_session("alua:1", "old-session")
+                action = {
+                    "schema_version": 1,
+                    "agent_id": "alua:1",
+                    "client_action_id": "mind-old",
+                    "type": "look",
+                    "parameters": {"yaw_delta_rad": 0.45, "pitch_delta_rad": 0.0},
+                }
+                store.record_decision(
+                    "mind-old",
+                    "alua:1",
+                    "old-session",
+                    500,
+                    action,
+                    {},
+                    goal_key="scan:recovery",
+                    goal_kind="scan_recovery",
+                )
+                store.mark_decision_submitted("mind-old", "req-old", "queued", 77)
+
+                store.apply_session("alua:1", "new-session")
+                self.assertIsNone(
+                    store.latest_submitted_goal("alua:1", "new-session")
+                )
+
+                action2 = {
+                    "schema_version": 1,
+                    "agent_id": "alua:1",
+                    "client_action_id": "mind-new",
+                    "type": "move",
+                    "parameters": {"forward": 1.0, "strafe": 0.0},
+                }
+                store.record_decision(
+                    "mind-new",
+                    "alua:1",
+                    "new-session",
+                    1,
+                    action2,
+                    {},
+                    goal_key="explore:open",
+                    goal_kind="explore",
+                )
+                store.mark_decision_submitted("mind-new", "req-new", "queued", 1)
+                latest = store.latest_submitted_goal("alua:1", "new-session")
+                self.assertIsNotNone(latest)
+                self.assertEqual(latest["goal_kind"], "explore")
+                self.assertEqual(latest["bridge_action_sequence"], 1)
+            finally:
+                store.close()
+
     def test_v1_database_is_backed_up_and_migrated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "legacy.sqlite3"

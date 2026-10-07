@@ -104,6 +104,7 @@ class GoalTests(unittest.TestCase):
             set(),
             memory,
             after_scan,
+            previous_goal_kind="scan_obstacle",
         )
         self.assertEqual(followup.kind, "explore")
 
@@ -119,6 +120,7 @@ class GoalTests(unittest.TestCase):
             set(),
             memory,
             after_move,
+            previous_goal_kind="explore",
         )
         self.assertEqual(rescan.kind, "scan_obstacle")
 
@@ -162,8 +164,35 @@ class GoalTests(unittest.TestCase):
             set(),
             memory,
             after_recovery,
+            previous_goal_kind="scan_recovery",
         )
         self.assertEqual(next_goal.kind, "explore")
+
+    def test_different_scan_kinds_cannot_chain_back_to_back(self) -> None:
+        frame = make_frame(25, distance=0.10, appearance="p-wall")
+        memory = WorkingMemory()
+        memory.add(frame)
+
+        def stats(key: str):
+            if key == "explore:open":
+                return {
+                    "attempts": 4,
+                    "successes": 1,
+                    "failures": 3,
+                    "last_sequence": 24,
+                }
+            return None
+
+        # Bez globální brány by zde obstacle/recovery/periodic kandidáti
+        # mohli po jiném scanu znovu vyprodukovat další look.
+        goal = IntrinsicCurriculum().choose(
+            frame,
+            set(),
+            memory,
+            stats,
+            previous_goal_kind="scan_periodic",
+        )
+        self.assertEqual(goal.kind, "explore")
 
     def test_zero_distance_is_really_nearest(self) -> None:
         frame = build_frame({

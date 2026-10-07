@@ -239,3 +239,26 @@ Nejde o chyby aktuálního V1, ale o další fáze:
 - sociální a jazyková vrstva.
 
 Další acceptance test má sledovat, že po aktualizaci už v běžném prostředí nevzniká neomezená série `look` bez intervenujících pohybových pokusů.
+
+## Dodatek – terénní retest po první opravě
+
+První oprava odstranila hlavní starvation chybu, ale živý retest ukázal další sérii několika `look` akcí za sebou.
+
+Příčina byla dvojí:
+
+1. anti-loop brána byla per-goal, takže různé scan cíle se mohly řetězit:
+   `scan_obstacle -> scan_recovery -> scan_periodic`;
+2. brána porovnávala `goal_stats.last_sequence`, ale observation sequence je monotónní pouze uvnitř jedné World session a po nové session se resetuje.
+
+Finální invariant je proto globální a session-scoped:
+
+```text
+poslední přijatý goal v aktuální session je scan
+=> žádný další scan goal není kandidát
+=> musí přijít jiná fyzická/behaviorální akce
+=> teprve potom se scan gate znovu otevře
+```
+
+Zdroj posledního goalu je tabulka `decisions` filtrovaná na aktuální `session_id` a pouze řádky s přiděleným `bridge_action_sequence`, tedy akce skutečně přijaté Bridge.
+
+Tím se anti-loop logika už neopírá o sequence hodnoty z jiné session a zároveň blokuje chaining mezi různými druhy scanů.
