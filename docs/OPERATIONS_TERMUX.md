@@ -136,3 +136,37 @@ Po několika minutách live běhu:
 ```
 
 Benchmark nevyžaduje běžící Bridge ani World; čte vlastní SQLite Alua.
+
+
+## Cognitive Core V5 – aktualizace a diagnostika
+
+Po pullu V5 otevře první příkaz používající Store databázi schema v5. Před migrací starší databáze se automaticky vytvoří soubor:
+
+```text
+<db>.pre-v5-YYYYMMDD-HHMMSS.bak
+```
+
+Doporučená kontrola po update:
+
+```bash
+cd "$HOME/alua/Alua"
+set -a
+. ./.env
+set +a
+
+.venv/bin/python -m alua status
+.venv/bin/python -m alua cognition-status
+.venv/bin/python -m alua doctor
+```
+
+`cognition-status` je lokální read-only diagnostika vyšší kognice. Ukazuje počty cognitive records, aktivní missions a poslední vysvětlitelný cognitive snapshot.
+
+Po field běhu:
+
+```bash
+.venv/bin/python -m alua evaluate --limit 2000
+.venv/bin/python -m alua benchmark --limit 2000
+```
+
+Při prvním V5 testu nemažte starou DB. Migrace je navržena tak, aby episodes, beliefs, goals a skills zachovala.
+
