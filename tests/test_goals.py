@@ -201,6 +201,24 @@ class GoalTests(unittest.TestCase):
         )
         self.assertEqual(goal.target_signature, "p-touching")
 
+    def test_old_failures_do_not_force_recovery_after_successes_dominate(self) -> None:
+        frame = make_frame(40)
+        memory = WorkingMemory()
+        memory.add(frame)
+
+        def stats(key: str):
+            if key == "explore:open":
+                return {
+                    "attempts": 8,
+                    "successes": 5,
+                    "failures": 3,
+                    "last_sequence": 39,
+                }
+            return None
+
+        goal = IntrinsicCurriculum().choose(frame, set(), memory, stats)
+        self.assertEqual(goal.kind, "explore")
+
     def test_repeated_failed_exploration_promotes_recovery_scan(self) -> None:
         frame = make_frame(3)
         memory = WorkingMemory()
