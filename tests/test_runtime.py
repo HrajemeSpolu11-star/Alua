@@ -156,11 +156,13 @@ class RuntimeTests(unittest.TestCase):
                 self.assertIsNotNone(decision)
                 self.assertEqual(decision["status"], "stale_target")
 
-                # Cursor už je posunut za starý vjem, takže stejný target se
-                # v dalším cyklu neopakuje a runtime zůstane živý.
+                # Cursor už je posunut za starý vjem. Další čerstvý frame
+                # může vytvořit novou netargetovanou akci; důležité je, že se
+                # neopakuje expirovaný target_ref a runtime pokračuje.
                 again = runtime.step()
-                self.assertFalse(again.action_submitted)
-                self.assertEqual(len(bridge.actions), 1)
+                self.assertTrue(again.action_submitted)
+                self.assertEqual(len(bridge.actions), 2)
+                self.assertNotIn("target_ref", bridge.actions[1])
             finally:
                 store.close()
 
