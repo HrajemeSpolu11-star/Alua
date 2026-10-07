@@ -55,6 +55,9 @@ class Runtime:
         self.reflex = reflex or ReflexGoalSelector()
         self.skills = skills or SkillLibrary()
         self.store.ensure_agent(config.agent_id)
+        deactivated = self.skills.reconcile(self.store, config.agent_id)
+        if deactivated:
+            LOG.info("Deaktivováno %s zastaralých reusable skills", deactivated)
 
     @staticmethod
     def _decision_id(
