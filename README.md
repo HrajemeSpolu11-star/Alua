@@ -34,6 +34,9 @@ Implementováno:
 - information scan řízený skutečnou nejistotou lokálního modelu místo pevného časového vzoru;
 - learned-skill gating proti aktuálním překážkám a stagnaci;
 - offline trajectory evaluator přes `alua evaluate`;
+- Adaptive Cognition V3: evidence-weighted utility, persistentní perceptuální topologie, belief provenance a sensory replay;
+- persistentní navigační zkušenost s tím, které manévry v podobném vjemovém kontextu fungují;
+- strict offline acceptance gate přes `alua benchmark`;
 - move a look podle kontraktu, který vlastní AluaWorld;
 - nedestruktivní touch blízkého neznámého cíle;
 - vnímání vlastních částí těla a volba volné levé/pravé ruky pro touch;
@@ -68,6 +71,7 @@ Po nastavení environment proměnných:
     .venv/bin/python -m alua doctor
     .venv/bin/python -m alua status
     .venv/bin/python -m alua evaluate
+    .venv/bin/python -m alua benchmark
     .venv/bin/python -m alua run
 
 Pro skutečný lokální test celého řetězce:
@@ -98,6 +102,7 @@ Dále:
 - docs/E2E_RUNTIME_2026-10-07.md
 - docs/AUDIT_BRAIN_2026-10-07.md
 - docs/COGNITIVE_ARCHITECTURE_V2.md
+- docs/ADAPTIVE_COGNITION_V3.md
 - docs/OPEN_SOURCE_REFERENCE_AUDIT_2026-10-07.md
 - docs/PROJECT_VISION_AI.md
 - docs/ARCHITECTURE.md
