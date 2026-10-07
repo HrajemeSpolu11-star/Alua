@@ -11,7 +11,7 @@ from typing import Any, Iterator
 from .perception import PerceptionFrame
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def canonical_json(value: Any) -> str:
@@ -210,6 +210,44 @@ class Store:
                     ON skills(agent_id, goal_kind, reusable, confidence);
                 CREATE INDEX IF NOT EXISTS idx_goals_kind
                     ON goal_stats(agent_id, kind, updated_at);
+                CREATE TABLE IF NOT EXISTS belief_evidence(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    agent_id TEXT NOT NULL,
+                    belief_key TEXT NOT NULL,
+                    session_id TEXT,
+                    observation_sequence INTEGER NOT NULL,
+                    decision_id TEXT,
+                    supported INTEGER NOT NULL,
+                    created_at REAL NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_belief_evidence_lookup
+                    ON belief_evidence(agent_id, belief_key, observation_sequence);
+                CREATE TABLE IF NOT EXISTS perceptual_places(
+                    agent_id TEXT NOT NULL,
+                    place_signature TEXT NOT NULL,
+                    visit_count INTEGER NOT NULL,
+                    first_sequence INTEGER NOT NULL,
+                    last_sequence INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(agent_id, place_signature)
+                );
+                CREATE TABLE IF NOT EXISTS perceptual_transitions(
+                    agent_id TEXT NOT NULL,
+                    from_signature TEXT NOT NULL,
+                    maneuver TEXT NOT NULL,
+                    to_signature TEXT NOT NULL,
+                    success_count INTEGER NOT NULL,
+                    failure_count INTEGER NOT NULL,
+                    confidence REAL NOT NULL,
+                    first_sequence INTEGER NOT NULL,
+                    last_sequence INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(agent_id, from_signature, maneuver, to_signature)
+                );
+                CREATE INDEX IF NOT EXISTS idx_perceptual_transition_origin
+                    ON perceptual_transitions(agent_id, from_signature, maneuver);
                 """
             )
 
@@ -540,6 +578,8 @@ class Store:
         value: dict[str, Any],
         supported: bool,
         sequence: int,
+        evidence_session_id: str | None = None,
+        evidence_decision_id: str | None = None,
     ) -> dict[str, Any]:
         now = time.time()
         with self._transaction() as db:
@@ -590,6 +630,22 @@ class Store:
                         now,
                         agent_id,
                         belief_key,
+                    ),
+                )
+
+            if evidence_session_id is not None or evidence_decision_id is not None:
+                db.execute(
+                    "INSERT INTO belief_evidence("
+                    "agent_id,belief_key,session_id,observation_sequence,decision_id,supported,created_at"
+                    ") VALUES(?,?,?,?,?,?,?)",
+                    (
+                        agent_id,
+                        belief_key,
+                        evidence_session_id,
+                        int(sequence),
+                        evidence_decision_id,
+                        1 if supported else 0,
+                        now,
                     ),
                 )
         return self.belief(agent_id, belief_key) or {}
@@ -827,6 +883,147 @@ class Store:
         result["reusable"] = bool(result["reusable"])
         return result
 
+    def belief_evidence(
+        self,
+        agent_id: str,
+        belief_key: str,
+        *,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        limit = max(1, min(1000, int(limit)))
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT agent_id,belief_key,session_id,observation_sequence,decision_id,supported,created_at "
+                "FROM belief_evidence WHERE agent_id=? AND belief_key=? "
+                "ORDER BY id DESC LIMIT ?",
+                (agent_id, belief_key, limit),
+            ).fetchall()
+        result = [dict(row) for row in rows]
+        for item in result:
+            item["supported"] = bool(item["supported"])
+        return result
+
+    def record_perceptual_place(
+        self,
+        agent_id: str,
+        place_signature: str,
+        sequence: int,
+    ) -> dict[str, Any]:
+        now = time.time()
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT visit_count FROM perceptual_places WHERE agent_id=? AND place_signature=?",
+                (agent_id, place_signature),
+            ).fetchone()
+            if row is None:
+                db.execute(
+                    "INSERT INTO perceptual_places("
+                    "agent_id,place_signature,visit_count,first_sequence,last_sequence,created_at,updated_at"
+                    ") VALUES(?,?,1,?,?,?,?)",
+                    (agent_id, place_signature, int(sequence), int(sequence), now, now),
+                )
+            else:
+                db.execute(
+                    "UPDATE perceptual_places SET visit_count=visit_count+1,last_sequence=?,updated_at=? "
+                    "WHERE agent_id=? AND place_signature=?",
+                    (int(sequence), now, agent_id, place_signature),
+                )
+        with self._lock:
+            result = self._db.execute(
+                "SELECT * FROM perceptual_places WHERE agent_id=? AND place_signature=?",
+                (agent_id, place_signature),
+            ).fetchone()
+        return dict(result) if result else {}
+
+    def update_perceptual_transition(
+        self,
+        *,
+        agent_id: str,
+        from_signature: str,
+        maneuver: str,
+        to_signature: str,
+        supported: bool,
+        sequence: int,
+    ) -> dict[str, Any]:
+        if maneuver not in {"forward", "left", "right", "back"}:
+            raise ValueError("unsupported maneuver")
+        now = time.time()
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT success_count,failure_count FROM perceptual_transitions "
+                "WHERE agent_id=? AND from_signature=? AND maneuver=? AND to_signature=?",
+                (agent_id, from_signature, maneuver, to_signature),
+            ).fetchone()
+            if row is None:
+                successes = 1 if supported else 0
+                failures = 0 if supported else 1
+                confidence = (successes + 1) / (successes + failures + 2)
+                db.execute(
+                    "INSERT INTO perceptual_transitions("
+                    "agent_id,from_signature,maneuver,to_signature,success_count,failure_count,"
+                    "confidence,first_sequence,last_sequence,created_at,updated_at"
+                    ") VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        agent_id,
+                        from_signature,
+                        maneuver,
+                        to_signature,
+                        successes,
+                        failures,
+                        confidence,
+                        int(sequence),
+                        int(sequence),
+                        now,
+                        now,
+                    ),
+                )
+            else:
+                successes = int(row["success_count"]) + (1 if supported else 0)
+                failures = int(row["failure_count"]) + (0 if supported else 1)
+                confidence = (successes + 1) / (successes + failures + 2)
+                db.execute(
+                    "UPDATE perceptual_transitions SET success_count=?,failure_count=?,confidence=?,"
+                    "last_sequence=?,updated_at=? WHERE agent_id=? AND from_signature=? AND maneuver=? AND to_signature=?",
+                    (
+                        successes,
+                        failures,
+                        confidence,
+                        int(sequence),
+                        now,
+                        agent_id,
+                        from_signature,
+                        maneuver,
+                        to_signature,
+                    ),
+                )
+        with self._lock:
+            result = self._db.execute(
+                "SELECT * FROM perceptual_transitions WHERE agent_id=? AND from_signature=? "
+                "AND maneuver=? AND to_signature=?",
+                (agent_id, from_signature, maneuver, to_signature),
+            ).fetchone()
+        return dict(result) if result else {}
+
+    def perceptual_transition_stats(
+        self,
+        agent_id: str,
+        from_signature: str,
+        maneuver: str,
+    ) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._db.execute(
+                "SELECT COALESCE(SUM(success_count),0) AS successes,"
+                "COALESCE(SUM(failure_count),0) AS failures,"
+                "COALESCE(SUM(CASE WHEN to_signature=from_signature THEN success_count ELSE 0 END),0) "
+                "AS self_loop_successes,"
+                "COUNT(*) AS destinations "
+                "FROM perceptual_transitions WHERE agent_id=? AND from_signature=? AND maneuver=?",
+                (agent_id, from_signature, maneuver),
+            ).fetchone()
+        if row is None or int(row["successes"]) + int(row["failures"]) == 0:
+            return None
+        return dict(row)
+
     def session_trace(
         self,
         agent_id: str,
@@ -948,6 +1145,18 @@ class Store:
                 "SELECT COUNT(*) FROM skills WHERE agent_id=? AND reusable=1",
                 (agent_id,),
             ).fetchone()[0]
+            belief_evidence_count = self._db.execute(
+                "SELECT COUNT(*) FROM belief_evidence WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
+            perceptual_places = self._db.execute(
+                "SELECT COUNT(*) FROM perceptual_places WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
+            perceptual_transitions = self._db.execute(
+                "SELECT COUNT(*) FROM perceptual_transitions WHERE agent_id=?",
+                (agent_id,),
+            ).fetchone()[0]
         return {
             "agent_id": agent_id,
             "session_id": state["session_id"],
@@ -960,5 +1169,8 @@ class Store:
             "goals": int(goals),
             "skills": int(skills),
             "reusable_skills": int(reusable),
+            "belief_evidence": int(belief_evidence_count),
+            "perceptual_places": int(perceptual_places),
+            "perceptual_transitions": int(perceptual_transitions),
             "schema_version": SCHEMA_VERSION,
         }
