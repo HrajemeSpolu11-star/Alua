@@ -194,6 +194,32 @@ class GoalTests(unittest.TestCase):
         )
         self.assertEqual(goal.kind, "explore")
 
+    def test_any_previous_look_blocks_immediate_scan_chain(self) -> None:
+        frame = make_frame(26, distance=0.10, appearance="p-wall")
+        memory = WorkingMemory()
+        memory.add(frame)
+
+        def stats(key: str):
+            if key == "explore:open":
+                return {
+                    "attempts": 4,
+                    "successes": 1,
+                    "failures": 3,
+                    "last_sequence": 25,
+                }
+            return None
+
+        goal = IntrinsicCurriculum().choose(
+            frame,
+            set(),
+            memory,
+            stats,
+            previous_goal_kind="explore",
+            previous_action_type="look",
+            information_need=0.95,
+        )
+        self.assertEqual(goal.kind, "explore")
+
     def test_information_scan_is_driven_by_model_uncertainty(self) -> None:
         frame = make_frame(6)
         memory = WorkingMemory()
