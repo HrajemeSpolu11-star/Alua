@@ -107,6 +107,7 @@ def locomotion_signals(frame: PerceptionFrame) -> dict[str, float | str]:
         "crouch_clearance_signal",
         "crawl_clearance_signal",
         "gap_ahead_signal",
+        "jump_gap_signal",
         "drop_depth_signal",
         "safe_drop_signal",
         "climbable_signal",
