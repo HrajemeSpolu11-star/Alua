@@ -42,6 +42,8 @@ AluaWorld už obsahuje persistentní fyzické tělo alua:1 a motorický sensory 
 
 Od 2026-10-07 je celý embodied loop ověřen v reálném běhu na Android/Termux: Alua přijímá observations, vytváří decisions, posílá actions, fyzické tělo je vykonává a pozdější sensory outcome vytváří beliefs a skills. Ověřený stav dosáhl 482 episodes, 235 decisions, 9 beliefs, 12 skills a 6 reusable skills. Podrobnosti jsou v `docs/E2E_RUNTIME_2026-10-07.md`.
 
+Následný audit mozku odhalil a opravil deterministický `look` loop, ztrátu zrakového perceptu po expiraci `target_ref` a několik kontextových chyb reusable skills. Přesné nálezy a invarianty jsou v `docs/AUDIT_BRAIN_2026-10-07.md`.
+
 Záměrně zatím není autonomně zapnuto:
 - pickup;
 - push;
@@ -90,6 +92,7 @@ Nejdůležitější dokument pro nový chat:
 
 Dále:
 - docs/E2E_RUNTIME_2026-10-07.md
+- docs/AUDIT_BRAIN_2026-10-07.md
 - docs/PROJECT_VISION_AI.md
 - docs/ARCHITECTURE.md
 - docs/BRIDGE_CONTRACT.md
