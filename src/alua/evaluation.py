@@ -42,13 +42,39 @@ def evaluate_trace(trace: list[dict[str, Any]]) -> dict[str, Any]:
 
     move_resolved = [row for row in resolved if row.get("action_type") == "move"]
     move_successes = sum(1 for row in move_resolved if row["outcome_success"])
+    move_progress = [
+        float(row["progress_signal"])
+        for row in move_resolved
+        if isinstance(row.get("progress_signal"), (int, float))
+        and not isinstance(row.get("progress_signal"), bool)
+    ]
+    mean_move_progress = (
+        sum(move_progress) / len(move_progress)
+        if move_progress
+        else None
+    )
+    longest_move_streak = _longest_streak(action_types, "move")
+    raw_same_action_streak = _longest_streak(action_types)
+    navigation_stagnation = (
+        len(move_progress) >= 5
+        and mean_move_progress is not None
+        and mean_move_progress < 0.55
+    )
+    action_stereotype = (
+        raw_same_action_streak >= 8
+        and (
+            longest_move_streak < raw_same_action_streak
+            or navigation_stagnation
+        )
+    )
 
     return {
         "decisions": len(trace),
         "action_counts": dict(Counter(action_types)),
         "goal_counts": dict(Counter(goal_kinds)),
         "status_counts": dict(Counter(statuses)),
-        "longest_same_action_streak": _longest_streak(action_types),
+        "longest_same_action_streak": raw_same_action_streak,
+        "longest_move_streak": longest_move_streak,
         "longest_look_streak": _longest_streak(action_types, "look"),
         "consecutive_look_pairs": consecutive_look_pairs,
         "resolved_outcomes": len(resolved),
@@ -63,13 +89,26 @@ def evaluate_trace(trace: list[dict[str, Any]]) -> dict[str, Any]:
             if move_resolved
             else None
         ),
+        "mean_move_progress": (
+            round(mean_move_progress, 4)
+            if mean_move_progress is not None
+            else None
+        ),
+        "low_progress_moves": sum(1 for value in move_progress if value < 0.55),
         "stale_targets": sum(1 for status in statuses if status == "stale_target"),
         "quality_flags": {
             "look_loop_detected": consecutive_look_pairs > 0,
-            "action_stereotype_detected": _longest_streak(action_types) >= 8,
+            "action_stereotype_detected": action_stereotype,
+            "navigation_stagnation_detected": navigation_stagnation,
             "low_move_success": (
                 len(move_resolved) >= 5
-                and move_successes / len(move_resolved) < 0.35
+                and (
+                    move_successes / len(move_resolved) < 0.35
+                    or (
+                        mean_move_progress is not None
+                        and mean_move_progress < 0.55
+                    )
+                )
             ),
         },
     }
