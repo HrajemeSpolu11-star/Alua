@@ -98,3 +98,34 @@ V1 preferuje:
     jedna Alua = jeden proces = jedna SQLite databáze.
 
 Až později lze přidat supervisor více agentů. Sdílená DB nesmí být zavedena jen kvůli pohodlí.
+
+## V3 – perceptuální topologie a provenance
+
+Dlouhodobá paměť nyní obsahuje také:
+
+### `perceptual_places`
+
+Rozpoznané perceptuální kontexty. Nejde o absolutní pozice. Signature vzniká pouze ze smyslových signálů a může být nejednoznačná.
+
+### `perceptual_transitions`
+
+Evidence přechodu:
+
+```text
+place_signature A
++ maneuver
+-> place_signature B
++ support / contradiction
+```
+
+Používá se jako prior pro budoucí lokální navigaci.
+
+### `belief_evidence`
+
+Auditní vazba beliefu na konkrétní zkušenost:
+- session;
+- observation sequence;
+- decision;
+- support/contradiction.
+
+Schema v4 před migrací starší DB automaticky vytváří backup. Stávající epizody, beliefs, goals a skills se zachovávají.
