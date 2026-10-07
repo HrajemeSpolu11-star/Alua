@@ -112,3 +112,74 @@ Schema v4 ukládá `belief_evidence` s session, observation sequence, decision I
 Přijato 2026-10-07.
 
 Persistované episodes a decision/outcome trace musí jít vyhodnotit bez běžícího Worldu. `alua benchmark` slouží jako acceptance gate proti regresím typu look-loop a action stereotype.
+
+
+## ADR-A025 – Prostorová paměť smí používat relativní odometrii, ne World XYZ
+
+Přijato 2026-10-07.
+
+Alua smí z vlastních ověřených motorických outcomes integrovat interní relativní pose `x/z/heading` s explicitní uncertainty. Tento pose není fyzická World souřadnice a nesmí být inicializován ani opravován privilegovanou pozicí z AluaWorld.
+
+Opětovné rozpoznání perceptuálního místa smí fungovat jako weak loop closure a snížit uncertainty.
+
+## ADR-A026 – Slepá ulička se řeší návratovou pamětí před náhodným escape
+
+Přijato 2026-10-07.
+
+Úspěšné přechody vytvářejí bounded route stack. Pokud lokální sensory evidence, failed progress a revisit evidence ukazují dead end, executive dostane `spatial_backtrack` goal a pokusí se vrátit přes inverse maneuver k předchozímu zapamatovanému place.
+
+Random/lateral escape zůstává fallback, nikoli první strategie při známé návratové cestě.
+
+## ADR-A027 – Predikce, risk a kauzalita jsou opravitelné modely
+
+Přijato 2026-10-07.
+
+`PredictiveModel`, `RiskModel` a `CausalLearner` ukládají pouze evidence-weighted hypotézy odvozené z vlastních actions a pozdějších outcomes.
+
+Prediction, causal hypothesis ani strategy prior nejsou World truth. Čerstvá sensory evidence má přednost.
+
+## ADR-A028 – Model-based deliberation je bounded a receding-horizon
+
+Přijato 2026-10-07.
+
+Při stagnaci může Alua porovnat několik fyzických alternativ podle expected progress, expected success, risk, uncertainty a weak strategy transfer prioru. Vybere se nejvýše jeden bounded krok; po něm se znovu vnímá a replánuje.
+
+V hlavní motorické smyčce není povolen generovaný executable code ani neomezené search tree.
+
+## ADR-A029 – SQLite schema v5 používá namespaced cognitive records
+
+Přijato 2026-10-07.
+
+Vyšší kognitivní modely používají tabulku `cognitive_records` s:
+- record key/kind;
+- sanitized JSON payload;
+- confidence;
+- support/contradiction;
+- first/last sequence.
+
+Před migrací starší DB se vytvoří backup. `target_ref` se i z tohoto payloadu sanitizuje.
+
+## ADR-A030 – Metakognice monitoruje cognition, nevytváří externí fakta
+
+Přijato 2026-10-07.
+
+Metakognice smí diagnostikovat stagnaci, loop, prediction error, nejistotu a vyžádat změnu strategie. Nesmí prohlásit, co externí objekt „je“.
+
+## ADR-A031 – Konsolidace používá kompresi a confidence decay, ne tiché mazání znalostí
+
+Přijato 2026-10-07.
+
+Periodická konsolidace může vytvářet episodic summaries, abstrahovat concepts a posouvat confidence dlouho neověřených beliefs směrem k nejistotě. Empirická evidence se nesmí svévolně přepsat administrativní pravdou.
+
+## ADR-A032 – Cizí tvrzení není vlastní belief
+
+Přijato 2026-10-07.
+
+Budoucí social testimony se ukládá odděleně se source identity/trust/confidence. Teprve vlastní evidence může tvrzení převést do běžného empirical belief.
+
+## ADR-A033 – Dlouhodobé missions jsou přerušitelné tělesnými potřebami
+
+Přijato 2026-10-07.
+
+Mission je perzistentní záměr vyšší úrovně, nikoli fixní motorická sekvence. Safety a homeostasis ji mohou suspendovat. Po každém motorickém kroku zůstává povinný fresh-perception replan.
+
