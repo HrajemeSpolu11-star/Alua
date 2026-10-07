@@ -1024,6 +1024,34 @@ class Store:
             return None
         return dict(row)
 
+    def session_episodes(
+        self,
+        agent_id: str,
+        session_id: str | None = None,
+        *,
+        limit: int = 5000,
+    ) -> list[dict[str, Any]]:
+        limit = max(1, min(20000, int(limit)))
+        if session_id is None:
+            session_id = self.state(agent_id).get("session_id")
+        if not isinstance(session_id, str) or not session_id:
+            return []
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT percept_json FROM episodes WHERE agent_id=? AND session_id=? "
+                "ORDER BY observation_sequence DESC LIMIT ?",
+                (agent_id, session_id, limit),
+            ).fetchall()
+        result: list[dict[str, Any]] = []
+        for row in reversed(rows):
+            try:
+                payload = json.loads(row["percept_json"])
+            except (TypeError, json.JSONDecodeError):
+                continue
+            if isinstance(payload, dict):
+                result.append(payload)
+        return result
+
     def session_trace(
         self,
         agent_id: str,
