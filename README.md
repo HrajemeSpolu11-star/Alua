@@ -20,8 +20,8 @@ Implementováno:
 - loopback-only AluaBridge klient;
 - per-agent token pouze z prostředí;
 - striktní schema_version 1 validace a druhá world-truth obrana;
-- SQLite kognitivní schema v3;
-- automatická záloha existující DB před migrací v1/v2 -> v3;
+- SQLite kognitivní schema v5 s automatickým backupem před migrací;
+- automatická záloha existující DB před každou podporovanou migrací, včetně v4 -> v5;
 - epizodická paměť bez target_ref;
 - bounded WorkingMemory posledních 32 frame v RAM;
 - krátkodobé vazby target_ref <-> appearance_id pouze v RAM;
@@ -35,6 +35,13 @@ Implementováno:
 - learned-skill gating proti aktuálním překážkám a stagnaci;
 - offline trajectory evaluator přes `alua evaluate`;
 - Adaptive Cognition V3: evidence-weighted utility, persistentní perceptuální topologie, belief provenance a sensory replay;
+- Cognitive Core V5: pozornost, multisenzorová scene integrace, object permanence, temporal model, route memory, relativní odometrie a dead-end backtracking;
+- prediktivní action model, counterfactual deliberation, kontextový risk, self-model, causal hypotheses a strategy meta-learning;
+- metakognice nad stagnací, loop riskem, nejistotou a prediction error;
+- regulační drives pro safety/homeostasis/curiosity/frustration/exploration;
+- prospective memory, dlouhodobější missions, aktivní experimenty, consolidation/forgetting a evidence-based concept formation;
+- social cognition/testimony a peer-model hooks, které zůstávají inertní bez explicitních social sensory dat;
+- SQLite schema v5 s generickými `cognitive_records` a CLI `alua cognition-status`;
 - persistentní navigační zkušenost s tím, které manévry v podobném vjemovém kontextu fungují;
 - strict offline acceptance gate přes `alua benchmark`;
 - move a look podle kontraktu, který vlastní AluaWorld;
@@ -51,14 +58,7 @@ Od 2026-10-07 je celý embodied loop ověřen v reálném běhu na Android/Termu
 
 Následný audit mozku odhalil a opravil deterministický `look` loop, ztrátu zrakového perceptu po expiraci `target_ref` a několik kontextových chyb reusable skills. Přesné nálezy a invarianty jsou v `docs/AUDIT_BRAIN_2026-10-07.md`.
 
-Záměrně zatím není autonomně zapnuto:
-- pickup;
-- push;
-- break_object;
-- fyzické needs/metabolismus;
-- sociální chování.
-
-World tyto fyzické manipulace může umět, ale mozek je nezačne používat bez naučeného risk/utility modelu.
+Embodied Needs V4 už používá fyzické needs/metabolismus, inventář a bounded manipulace. Pickup a break se neprovádějí plošně: výběr je stále podřízen aktuální potřebě, risk/utility evidenci a fyzickému výsledku. Social cognition ve V5 je připravená pouze jako evidence vrstva a bez explicitního social sensory kanálu z Worldu je neaktivní.
 
 ## Rychlý start
 
@@ -72,6 +72,7 @@ Po nastavení environment proměnných:
     .venv/bin/python -m alua status
     .venv/bin/python -m alua evaluate
     .venv/bin/python -m alua benchmark
+    .venv/bin/python -m alua cognition-status
     .venv/bin/python -m alua run
 
 Pro skutečný lokální test celého řetězce:
@@ -104,6 +105,7 @@ Dále:
 - docs/INCIDENT_2026-10-07_ONE_BLOCK_BOUNCE.md
 - docs/COGNITIVE_ARCHITECTURE_V2.md
 - docs/ADAPTIVE_COGNITION_V3.md
+- docs/COGNITIVE_CORE_V5.md
 - docs/OPEN_SOURCE_REFERENCE_AUDIT_2026-10-07.md
 - docs/PROJECT_VISION_AI.md
 - docs/ARCHITECTURE.md
