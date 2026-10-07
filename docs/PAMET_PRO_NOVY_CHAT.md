@@ -2,6 +2,28 @@
 
 Aktualizováno: 2026-10-07.
 
+## Cognitive Architecture V2 – 2026-10-07
+
+Po porovnání s Voyager, Odyssey, luanti-voyager, Mineflayer Pathfinder, Baritone, Craftium, MineStudio, OpenHA a Mindcraft byla nad funkční V1 přidána hierarchická vrstva bez bourání embodied kontraktu.
+
+Nově existuje:
+- egocentrický `EgocentricWorldModel`;
+- cost-based `LocalNavigator`;
+- `BehaviorCritic` pro loop/stagnation detection;
+- data-only `SkillGraph` s composite behavior skills;
+- `BoundedPlanner`;
+- `ExecutiveController` pro plan lifecycle a replanning;
+- uncertainty-driven information scan;
+- learned-skill gating proti čerstvému perceptu;
+- `Store.session_trace()` a `alua evaluate` pro behaviorální benchmark.
+
+Session-local V2 stav se při změně World session resetuje. Episodes, beliefs a learned skills se zachovávají.
+
+Autoritativní dokumenty:
+- `docs/COGNITIVE_ARCHITECTURE_V2.md`;
+- `docs/OPEN_SOURCE_REFERENCE_AUDIT_2026-10-07.md`.
+
+
 ## Co projekt je
 
 Alua je samostatný mozek autonomního agenta pro AluaWorld.
