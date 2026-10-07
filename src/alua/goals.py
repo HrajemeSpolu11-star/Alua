@@ -79,6 +79,7 @@ class IntrinsicCurriculum:
         memory: WorkingMemory,
         goal_stats: Callable[[str], dict[str, Any] | None],
         previous_goal_kind: str | None = None,
+        information_need: float | None = None,
     ) -> GoalCandidate:
         candidates: list[GoalCandidate] = []
         nearest = self._nearest_target(frame, require_target_ref=True)
@@ -172,18 +173,29 @@ class IntrinsicCurriculum:
                 )
             )
 
-        if scan_allowed and frame.sequence % 5 == 0:
+        if information_need is None:
+            should_information_scan = frame.sequence % 5 == 0
+            information_need_value = 0.50 if should_information_scan else 0.0
+            scan_trigger = "legacy_periodic_information_gain"
+        else:
+            information_need_value = max(0.0, min(1.0, float(information_need)))
+            should_information_scan = information_need_value >= 0.58
+            scan_trigger = "model_uncertainty"
+
+        if scan_allowed and should_information_scan:
             key = "scan:periodic"
             periodic_stats = goal_stats(key)
             attempts = int(periodic_stats.get("attempts", 0)) if periodic_stats else 0
+            base_priority = 0.54 + 0.10 * information_need_value
             candidates.append(
                 GoalCandidate(
                     key=key,
                     kind="scan_periodic",
-                    priority=self._adjust_priority(0.56, periodic_stats),
+                    priority=self._adjust_priority(base_priority, periodic_stats),
                     reason={
                         "selector": "intrinsic_curriculum",
-                        "trigger": "periodic_information_gain",
+                        "trigger": scan_trigger,
+                        "information_need": information_need_value,
                         "scan_attempt": attempts + 1,
                     },
                 )

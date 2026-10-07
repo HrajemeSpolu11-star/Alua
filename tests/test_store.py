@@ -233,6 +233,57 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_session_trace_joins_decision_and_sensory_outcome(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            try:
+                store.apply_session("alua:1", "s1")
+                action = {
+                    "schema_version": 1,
+                    "agent_id": "alua:1",
+                    "client_action_id": "mind-trace",
+                    "type": "move",
+                    "parameters": {"forward": 1.0, "strafe": 0.0},
+                }
+                store.record_decision(
+                    "mind-trace",
+                    "alua:1",
+                    "s1",
+                    1,
+                    action,
+                    {"policy": "test"},
+                    goal_key="explore:open",
+                    goal_kind="explore",
+                )
+                store.mark_decision_submitted("mind-trace", "req", "queued", 9)
+                store.record_expectation(
+                    decision_id="mind-trace",
+                    agent_id="alua:1",
+                    session_id="s1",
+                    bridge_action_sequence=9,
+                    action_type="move",
+                    target_signature=None,
+                    action=action,
+                    created_sequence=1,
+                    goal_key="explore:open",
+                    goal_kind="explore",
+                )
+                store.resolve_expectation(
+                    agent_id="alua:1",
+                    session_id="s1",
+                    bridge_action_sequence=9,
+                    outcome={"success_signal": 1.0, "feedback_signal": "effect"},
+                    resolved_sequence=2,
+                )
+                trace = store.session_trace("alua:1", "s1")
+                self.assertEqual(len(trace), 1)
+                self.assertEqual(trace[0]["action_type"], "move")
+                self.assertEqual(trace[0]["expectation_state"], "resolved")
+                self.assertTrue(trace[0]["outcome_success"])
+                self.assertEqual(trace[0]["rationale"]["policy"], "test")
+            finally:
+                store.close()
+
     def test_v1_database_is_backed_up_and_migrated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "legacy.sqlite3"

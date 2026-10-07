@@ -1,5 +1,21 @@
 # Přehled změn
 
+## 2026-10-07 – Cognitive Architecture V2
+
+- přidán bounded egocentrický world model pouze z vlastních sensory frames;
+- přidán cost-based receding-horizon LocalNavigator s failure a repetition penalty;
+- přidán BehaviorCritic pro repeated look, action stereotype a repeated move failures;
+- přidán data-only SkillGraph s composite behavior skills;
+- přidán BoundedPlanner a ExecutiveController s multi-step plan lifecycle;
+- learned explore skill se použije pouze pokud neodporuje aktuálnímu local modelu/criticu;
+- information scan je v live runtime řízen horizontální uncertainty místo pevného observation modulo patternu;
+- přidán bounded `Store.session_trace()` a CLI `alua evaluate`;
+- přidány behaviorální metriky pro look-loop, action streak, outcome success a move success;
+- session transition resetuje V2 local model, critic, planner a navigation penalties, ale zachovává long-term cognition;
+- přidán open-source reference audit a kompletní Cognitive V2 dokumentace;
+- přidány unit testy pro world model, navigator, critic, planner, executive, evaluator a trajectory trace.
+
+
 ## 2026-10-07 – globální scan gate po terénním retestu
 
 - reálný retest ukázal, že různé scan cíle mohly stále řetězit `look` za sebou, i když každý jednotlivý scan typ měl vlastní anti-loop bránu;

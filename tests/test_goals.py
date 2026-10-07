@@ -194,6 +194,30 @@ class GoalTests(unittest.TestCase):
         )
         self.assertEqual(goal.kind, "explore")
 
+    def test_information_scan_is_driven_by_model_uncertainty(self) -> None:
+        frame = make_frame(6)
+        memory = WorkingMemory()
+        memory.add(frame)
+
+        uncertain = IntrinsicCurriculum().choose(
+            frame,
+            set(),
+            memory,
+            lambda _: None,
+            information_need=0.90,
+        )
+        self.assertEqual(uncertain.kind, "scan_periodic")
+        self.assertEqual(uncertain.reason["trigger"], "model_uncertainty")
+
+        known = IntrinsicCurriculum().choose(
+            frame,
+            set(),
+            memory,
+            lambda _: None,
+            information_need=0.10,
+        )
+        self.assertEqual(known.kind, "explore")
+
     def test_zero_distance_is_really_nearest(self) -> None:
         frame = build_frame({
             "schema_version": 1,

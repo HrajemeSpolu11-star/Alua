@@ -111,3 +111,44 @@ Později může být přidán jako volitelný diagnostický nebo jazykový modul
 - nahrazovat perzistentní kognitivní stav;
 - být jediným zdrojem rozhodnutí;
 - měnit beliefs bez evidence.
+
+## Hierarchické rozhodování V2
+
+Aktuální runtime odděluje:
+1. reflex/intrinsic goal;
+2. composite skill;
+3. bounded plan;
+4. lokální controller;
+5. primitive action.
+
+Příklad:
+
+```text
+explore
+ -> bypass_obstacle
+ -> navigate_lateral
+ -> nový vjem/outcome
+ -> navigate_frontier
+```
+
+Planner nikdy negeneruje libovolný program. Rozkládá goal pouze na známé bezpečné controller steps.
+
+## Information gain
+
+Runtime už nepoužívá periodický scan pouze jako pevný modulo trigger. Egocentrický world model odhaduje horizontální uncertainty a curriculum žádá information scan tehdy, když lokální model skutečně potřebuje další informaci.
+
+## Self-critic
+
+BehaviorCritic sleduje pouze vlastní trajectory:
+- repeated look;
+- action stereotype;
+- opakované neúspěšné move;
+- goal stagnation kombinovanou s chybějícím motorickým pokrokem.
+
+Výsledek criticu je replan signál, nikoli belief.
+
+## Lokální navigační učení
+
+LocalNavigator udržuje session-local failure penalty pro konkrétní manévry. Neúspěšný fyzický outcome zvýší cenu stejného manévru; úspěch ji sníží. Po každém novém vjemu se směry znovu ohodnotí.
+
+Dlouhodobé empirické skills zůstávají v SQLite a používají se pouze pokud neodporují aktuálnímu smyslovému kontextu.
