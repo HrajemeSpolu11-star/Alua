@@ -82,7 +82,9 @@ class PerceptionTests(unittest.TestCase):
                 "motor": {
                     "events": [{
                         "source_sequence": 7,
-                        "success_signal": 1,
+                        "success_signal": 0.72,
+                        "progress_signal": 0.72,
+                        "slip_signal": 0.15,
                         "feedback_signal": "effect",
                         "effort_signal": 0.2,
                         "age_fraction": 0.1,
@@ -92,6 +94,8 @@ class PerceptionTests(unittest.TestCase):
         })
         self.assertEqual(frame.motor_events[0]["source_sequence"], 7)
         self.assertEqual(frame.motor_events[0]["feedback_signal"], "effect")
+        self.assertEqual(frame.motor_events[0]["progress_signal"], 0.72)
+        self.assertEqual(frame.motor_events[0]["slip_signal"], 0.15)
 
 
 if __name__ == "__main__":
