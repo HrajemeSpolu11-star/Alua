@@ -10,6 +10,7 @@ from typing import Any
 from .bridge_client import BridgeClient
 from .config import Config
 from .errors import BridgeHttpError, BridgeUnavailable, ProtocolError
+from .executive import ExecutiveController
 from .goals import GoalCandidate, IntrinsicCurriculum, ReflexGoalSelector
 from .learning import learn_from_motor_outcome, motor_success
 from .memory import WorkingMemory
@@ -45,6 +46,7 @@ class Runtime:
         curriculum: IntrinsicCurriculum | None = None,
         reflex: ReflexGoalSelector | None = None,
         skills: SkillLibrary | None = None,
+        executive: ExecutiveController | None = None,
     ):
         self.config = config
         self.store = store
@@ -54,6 +56,7 @@ class Runtime:
         self.curriculum = curriculum or IntrinsicCurriculum()
         self.reflex = reflex or ReflexGoalSelector()
         self.skills = skills or SkillLibrary()
+        self.executive = executive or ExecutiveController(fallback_policy=self.policy)
         self.store.ensure_agent(config.agent_id)
         deactivated = self.skills.reconcile(self.store, config.agent_id)
         if deactivated:
@@ -88,6 +91,7 @@ class Runtime:
                 continue
 
             succeeded = motor_success(event)
+            self.executive.on_outcome(expectation, succeeded)
             learn_from_motor_outcome(
                 self.store,
                 self.config.agent_id,
@@ -151,6 +155,7 @@ class Runtime:
         changed = self.store.apply_session(self.config.agent_id, session_id)
         if changed:
             self.memory.clear()
+            self.executive.reset_session()
 
         state = self.store.state(self.config.agent_id)
         cursor = int(state["last_observation_sequence"])
@@ -173,6 +178,7 @@ class Runtime:
             if self.store.record_observation(self.config.agent_id, session_id, frame):
                 processed += 1
                 self.memory.add(frame)
+                self.executive.observe(frame, current_novel)
                 latest = frame
                 latest_novel = current_novel
                 cursor = frame.sequence
@@ -192,16 +198,21 @@ class Runtime:
         goal, is_reflex = self._select_goal(latest, latest_novel, session_id)
         skill_key: str | None = None
 
-        retrieved = None if is_reflex else self.skills.retrieve(
-            self.store,
-            self.config.agent_id,
-            goal,
-            latest,
-        )
+        retrieved = None
+        if (
+            not is_reflex
+            and self.executive.allow_reusable_skill(goal, latest)
+        ):
+            retrieved = self.skills.retrieve(
+                self.store,
+                self.config.agent_id,
+                goal,
+                latest,
+            )
         if retrieved is not None:
             skill_key, intent = retrieved
         else:
-            intent = self.policy.choose(latest, goal, self.memory)
+            intent = self.executive.choose(latest, goal, self.memory)
 
         action: dict[str, Any] = {
             "schema_version": 1,
@@ -244,6 +255,7 @@ class Runtime:
             if exc.code != "target_expired":
                 raise
             self.store.mark_decision_rejected(decision_id, "stale_target")
+            self.executive.on_rejected(goal, "stale_target")
             LOG.info(
                 "Zahozen zastaralý target_ref z observation %s; čekám na čerstvý vjem",
                 latest.sequence,
@@ -265,6 +277,7 @@ class Runtime:
             response["status"],
             response["action_sequence"],
         )
+        self.executive.on_submitted(intent, goal, latest.sequence)
         self.store.record_goal_attempt(
             agent_id=self.config.agent_id,
             goal_key=goal.key,
