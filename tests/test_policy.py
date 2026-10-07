@@ -165,5 +165,167 @@ class PolicyTests(unittest.TestCase):
         self.assertLess(action.parameters["speed_fraction"], 1)
 
 
+    def test_critical_breath_surfaces_with_swim_action(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 20,
+            "simulation_time": 20.0,
+            "channels": {
+                "vitals": {"breath_fraction": 0.2, "stamina_fraction": 0.8},
+                "locomotion": {"head_submerged_signal": 1, "feet_in_liquid_signal": 1},
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+        action = ExplorationPolicy().choose(
+            current,
+            GoalCandidate("survive:breath", "survive_breath", 1.25),
+            memory,
+        )
+        self.assertEqual(action.action_type, "move")
+        self.assertEqual(action.parameters["mode"], "swim")
+        self.assertGreater(action.parameters["vertical"], 0)
+
+    def test_step_affordance_uses_vault_not_blind_strafe(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 21,
+            "simulation_time": 21.0,
+            "channels": {
+                "vision": {"rays": [{
+                    "distance_fraction": 0.06,
+                    "appearance_id": "p-step",
+                    "blocks_motion": True,
+                }]},
+                "vitals": {
+                    "stamina_fraction": 0.8,
+                    "fatigue_signal": 0.1,
+                    "breath_fraction": 1.0,
+                },
+                "locomotion": {
+                    "grounded_signal": 1,
+                    "step_up_signal": 1,
+                    "gap_ahead_signal": 0,
+                },
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+        action = ExplorationPolicy().terrain_intent(
+            current,
+            GoalCandidate("explore:open", "explore", 0.5),
+            memory,
+        )
+        self.assertIsNotNone(action)
+        self.assertEqual(action.parameters["mode"], "vault")
+
+    def test_verified_gap_landing_enables_jump(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 22,
+            "simulation_time": 22.0,
+            "channels": {
+                "vision": {"rays": [{"distance_fraction": 1.0, "empty": True}]},
+                "vitals": {
+                    "stamina_fraction": 0.8,
+                    "fatigue_signal": 0.1,
+                    "breath_fraction": 1.0,
+                },
+                "locomotion": {
+                    "grounded_signal": 1,
+                    "gap_ahead_signal": 1,
+                    "jump_gap_signal": 1,
+                    "safe_drop_signal": 0,
+                },
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+        action = ExplorationPolicy().terrain_intent(
+            current,
+            GoalCandidate("explore:open", "explore", 0.5),
+            memory,
+        )
+        self.assertEqual(action.parameters["mode"], "jump")
+
+    def test_unknown_unsafe_drop_is_not_walked_into(self) -> None:
+        current = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 23,
+            "simulation_time": 23.0,
+            "channels": {
+                "vision": {"rays": [{"distance_fraction": 1.0, "empty": True}]},
+                "vitals": {"stamina_fraction": 0.8, "fatigue_signal": 0.1},
+                "locomotion": {
+                    "grounded_signal": 1,
+                    "gap_ahead_signal": 1,
+                    "jump_gap_signal": 0,
+                    "safe_drop_signal": 0,
+                },
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(current)
+        action = ExplorationPolicy().terrain_intent(
+            current,
+            GoalCandidate("explore:open", "explore", 0.5),
+            memory,
+        )
+        self.assertEqual(action.parameters["forward"], 0.0)
+        self.assertNotEqual(action.parameters["strafe"], 0.0)
+
+    def test_hunger_consumes_selected_inventory_slot(self) -> None:
+        current = frame(sequence=24)
+        memory = WorkingMemory()
+        memory.add(current)
+        goal = GoalCandidate(
+            "need:consume:pfood",
+            "satisfy_hunger",
+            0.9,
+            target_signature="pfood",
+            reason={"phase": "consume_inventory", "slot_index": 3},
+        )
+        action = ExplorationPolicy().choose(current, goal, memory)
+        self.assertEqual(action.action_type, "interact")
+        self.assertEqual(action.parameters, {"verb": "consume", "slot_index": 3})
+
+    def test_collect_uses_pickup_to_inventory(self) -> None:
+        current = frame(sequence=25)
+        memory = WorkingMemory()
+        memory.add(current)
+        goal = GoalCandidate(
+            "collect:p-new",
+            "collect_object",
+            0.8,
+            target_ref="t25_1",
+            target_signature="p-new",
+        )
+        action = ExplorationPolicy().choose(current, goal, memory)
+        self.assertEqual(action.action_type, "manipulate")
+        self.assertEqual(action.parameters["verb"], "pickup")
+        self.assertTrue(action.parameters["store"])
+
+    def test_mining_exists_only_for_explicit_need_goal(self) -> None:
+        current = frame(sequence=26)
+        memory = WorkingMemory()
+        memory.add(current)
+        goal = GoalCandidate(
+            "need:mine:p-resource",
+            "acquire_required_resource",
+            0.9,
+            target_ref="t26_1",
+            target_signature="p-resource",
+            reason={"phase": "mine_required"},
+        )
+        action = ExplorationPolicy().choose(current, goal, memory)
+        self.assertEqual(action.action_type, "manipulate")
+        self.assertEqual(action.parameters["verb"], "break_object")
+        self.assertEqual(action.rationale["policy"], "need_driven_mining")
+
+
 if __name__ == "__main__":
     unittest.main()
