@@ -52,9 +52,13 @@ class PlanningTests(unittest.TestCase):
             GoalCandidate("explore:open", "explore", 0.5),
             frame,
             model,
-            Critique(True, True, ("three_failed_moves",)),
+            Critique(True, True, ("poor_move_progress",)),
         )
         self.assertEqual(plan.skill_name, "escape_stagnation")
+        self.assertEqual(
+            tuple(step.kind for step in plan.steps),
+            ("reorient_escape", "navigate_escape", "navigate_frontier"),
+        )
 
 
 if __name__ == "__main__":
