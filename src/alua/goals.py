@@ -40,11 +40,26 @@ class IntrinsicCurriculum:
     """Evidence-driven curriculum built only from Alua's own percepts/history."""
 
     @staticmethod
-    def _nearest_target(frame: PerceptionFrame) -> TargetPercept | None:
-        candidates = [target for target in frame.targets if target.distance_fraction is not None]
+    def _nearest_target(
+        frame: PerceptionFrame,
+        *,
+        require_target_ref: bool = False,
+    ) -> TargetPercept | None:
+        candidates = [
+            target
+            for target in frame.targets
+            if target.distance_fraction is not None
+            and (not require_target_ref or target.target_ref is not None)
+        ]
         if not candidates:
             return None
-        return min(candidates, key=lambda item: (item.distance_fraction or 1.0, item.ray_index))
+        return min(
+            candidates,
+            key=lambda item: (
+                item.distance_fraction if item.distance_fraction is not None else 1.0,
+                item.ray_index,
+            ),
+        )
 
     @staticmethod
     def _adjust_priority(base: float, stats: dict[str, Any] | None) -> float:
@@ -65,7 +80,8 @@ class IntrinsicCurriculum:
         goal_stats: Callable[[str], dict[str, Any] | None],
     ) -> GoalCandidate:
         candidates: list[GoalCandidate] = []
-        nearest = self._nearest_target(frame)
+        nearest = self._nearest_target(frame, require_target_ref=True)
+        explore_stats = goal_stats("explore:open")
 
         if (
             nearest
@@ -109,44 +125,66 @@ class IntrinsicCurriculum:
             and central.distance_fraction < 0.12
         ):
             key = "scan:obstacle"
-            candidates.append(
-                GoalCandidate(
-                    key=key,
-                    kind="scan_obstacle",
-                    priority=self._adjust_priority(0.78, goal_stats(key)),
-                    reason={
-                        "selector": "intrinsic_curriculum",
-                        "distance_fraction": central.distance_fraction,
-                    },
+            scan_stats = goal_stats(key)
+            last_scan = int(scan_stats.get("last_sequence", -1)) if scan_stats else -1
+            last_explore = int(explore_stats.get("last_sequence", -1)) if explore_stats else -1
+            # Jedno rozhlédnutí musí být následováno pokusem o pohyb. Bez této
+            # brány mohl úspěšný look zůstat nejvyšší prioritou donekonečna.
+            needs_scan = scan_stats is None or last_explore > last_scan
+            if needs_scan:
+                attempts = int(scan_stats.get("attempts", 0)) if scan_stats else 0
+                candidates.append(
+                    GoalCandidate(
+                        key=key,
+                        kind="scan_obstacle",
+                        priority=self._adjust_priority(0.78, scan_stats),
+                        reason={
+                            "selector": "intrinsic_curriculum",
+                            "distance_fraction": central.distance_fraction,
+                            "scan_attempt": attempts + 1,
+                            "after_explore_sequence": last_explore,
+                        },
+                    )
                 )
-            )
 
-        explore_stats = goal_stats("explore:open")
         if explore_stats and int(explore_stats.get("failures", 0)) >= 2:
             key = "scan:recovery"
-            candidates.append(
-                GoalCandidate(
-                    key=key,
-                    kind="scan_recovery",
-                    priority=self._adjust_priority(0.84, goal_stats(key)),
-                    reason={
-                        "selector": "intrinsic_curriculum",
-                        "trigger": "repeated_exploration_failure",
-                        "explore_failures": int(explore_stats.get("failures", 0)),
-                    },
+            recovery_stats = goal_stats(key)
+            last_recovery = int(recovery_stats.get("last_sequence", -1)) if recovery_stats else -1
+            last_explore = int(explore_stats.get("last_sequence", -1))
+            # Recovery scan je reakce na NOVÝ neúspěšný pokus o exploration.
+            # Po jednom scanu musí agent zkusit jinou motorickou akci, jinak
+            # vzniká nekonečný look loop.
+            if recovery_stats is None or last_explore > last_recovery:
+                attempts = int(recovery_stats.get("attempts", 0)) if recovery_stats else 0
+                candidates.append(
+                    GoalCandidate(
+                        key=key,
+                        kind="scan_recovery",
+                        priority=self._adjust_priority(0.84, recovery_stats),
+                        reason={
+                            "selector": "intrinsic_curriculum",
+                            "trigger": "repeated_exploration_failure",
+                            "explore_failures": int(explore_stats.get("failures", 0)),
+                            "scan_attempt": attempts + 1,
+                            "after_explore_sequence": last_explore,
+                        },
+                    )
                 )
-            )
 
         if frame.sequence % 5 == 0:
             key = "scan:periodic"
+            periodic_stats = goal_stats(key)
+            attempts = int(periodic_stats.get("attempts", 0)) if periodic_stats else 0
             candidates.append(
                 GoalCandidate(
                     key=key,
                     kind="scan_periodic",
-                    priority=self._adjust_priority(0.56, goal_stats(key)),
+                    priority=self._adjust_priority(0.56, periodic_stats),
                     reason={
                         "selector": "intrinsic_curriculum",
                         "trigger": "periodic_information_gain",
+                        "scan_attempt": attempts + 1,
                     },
                 )
             )
@@ -161,6 +199,9 @@ class IntrinsicCurriculum:
                     "selector": "intrinsic_curriculum",
                     "trigger": "default_exploration",
                     "working_memory_frames": len(memory),
+                    "explore_attempt": int(explore_stats.get("attempts", 0)) + 1
+                    if explore_stats
+                    else 1,
                 },
             )
         )
