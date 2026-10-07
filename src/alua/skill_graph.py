@@ -25,6 +25,18 @@ class SkillGraph:
 
     def __init__(self) -> None:
         self._skills = {
+            "cognitive_backtrack": SkillDefinition(
+                "cognitive_backtrack",
+                frozenset({"spatial_backtrack"}),
+                ("backtrack",),
+                "return along Alua's own remembered route instead of random local scanning",
+            ),
+            "model_based_navigation": SkillDefinition(
+                "model_based_navigation",
+                frozenset({"deliberate_navigation"}),
+                ("deliberate",),
+                "execute one bounded action selected by prediction and risk models",
+            ),
             "survive_surface": SkillDefinition(
                 "survive_surface",
                 frozenset({"survive_breath"}),
@@ -102,6 +114,10 @@ class SkillGraph:
         model: EgocentricWorldModel,
         critique: Critique,
     ) -> SkillDefinition:
+        if goal.kind == "spatial_backtrack":
+            return self.get("cognitive_backtrack")
+        if goal.kind == "deliberate_navigation":
+            return self.get("model_based_navigation")
         if goal.kind == "survive_breath":
             return self.get("survive_surface")
         if goal.kind == "survive_damage":
