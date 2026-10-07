@@ -135,6 +135,22 @@ class SkillLibrary:
         step = _safe_step_from_action(action)
         if step is None:
             return None
+        if goal_kind == "explore":
+            parameters = step.get("parameters", {})
+            forward = parameters.get("forward")
+            strafe = parameters.get("strafe")
+            if (
+                not isinstance(forward, (int, float))
+                or isinstance(forward, bool)
+                or not isinstance(strafe, (int, float))
+                or isinstance(strafe, bool)
+                or float(forward) < 0.5
+                or abs(float(strafe)) > 0.05
+            ):
+                # Obstacle-bypass je kontextová motorická reakce, ne univerzální
+                # explore skill. Bez precondition modelu by se mohl přenést do
+                # otevřeného prostoru a vytvořit nový stereotyp.
+                return None
         target_signature = expectation.get("target_signature")
         if not isinstance(target_signature, str):
             target_signature = None
