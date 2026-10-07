@@ -1,5 +1,16 @@
 # Implementační deník Alua AI
 
+## 2026-10-07 – první skutečně uzavřený embodied loop
+
+Mobilní běh potvrdil celý řetězec od observation až po fyzický outcome a learning. Po opravě World body adapteru začal `last_observation_sequence` růst ze 0 na stovky frame. Druhý runtime blocker byl `409 target_expired`: krátkodobý opaque handle mohl korektně vypršet, ale Alua tento stav považovala za fatální.
+
+Runtime nyní stale target decision označí jako `stale_target`, nevytvoří expectation ani falešný goal outcome a pokračuje dalším čerstvým vjemem. Bridge zároveň expirovaný handle z observation odstraňuje a World má bezpečnostní TTL rezervu.
+
+Po opravách se `alua:1` skutečně autonomně pohybovala ve světě. World potvrzoval úspěšné `look` sequence přes 100 a kognitivní stav obsahoval 482 episodes, 235 decisions, 9 beliefs, 10 goals, 12 skills a 6 reusable skills. Tím je transportní/embodied E2E blocker uzavřen.
+
+Kompletní reprodukce, diagnostika a runbook: `docs/E2E_RUNTIME_2026-10-07.md`.
+
+
 Tento dokument doplňuje changelog. Changelog říká co se změnilo; tento deník zachycuje technický důvod a návaznosti.
 
 ## 2026-10-06 – oddělení mozku od světa

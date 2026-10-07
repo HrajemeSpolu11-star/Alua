@@ -1,10 +1,30 @@
 # Paměť projektu Alua AI pro nový chat
 
-Aktualizováno: 2026-10-06.
+Aktualizováno: 2026-10-07.
 
 ## Co projekt je
 
 Alua je samostatný mozek autonomního agenta pro AluaWorld.
+
+## Nejnovější ověřený stav
+
+2026-10-07 proběhl první skutečně úspěšný mobilní E2E běh všech tří repozitářů. `alua:1` přijímala observations, autonomně vykonávala fyzické akce a z budoucích motorických vjemů vznikaly beliefs a skills.
+
+Ověřený snapshot:
+
+- `last_observation_sequence = 474`;
+- `episodes = 482`;
+- `known_appearance_signatures = 13`;
+- `decisions = 235`;
+- `beliefs = 9`;
+- `pending_expectations = 1`;
+- `goals = 10`;
+- `skills = 12`;
+- `reusable_skills = 6`;
+- `schema_version = 3`.
+
+Původní hlavní blocker byl ve World body adapteru, nikoli v AI. Druhý blocker byl recoverable `target_expired` závod. Oba jsou opravené. Úplný runbook je v `docs/E2E_RUNTIME_2026-10-07.md`.
+
 
 Tři repozitáře:
 - AluaWorld = fyzický svět, tělo, smysly, fyzika a následky;
@@ -27,8 +47,8 @@ Existuje:
 - Python runtime;
 - BridgeClient;
 - strict schema/perception boundary;
-- SQLite schema v2;
-- automatický backup při migraci v1 -> v2;
+- SQLite schema v3;
+- automatický backup při migraci v1/v2 -> v3;
 - episodes, appearance_stats, decisions, expectations, beliefs a session_events;
 - WorkingMemory max 32 frame;
 - session recovery;
@@ -93,13 +113,14 @@ Po spuštění Worldu a Bridge:
 
 ## Bezprostřední další práce
 
-1. skutečný E2E smoke na telefonu;
-2. restart/recovery test všech tří procesů;
-3. metabolismus/needs ve Worldu;
-4. goal/utility vrstva v Alua;
-5. risk learning;
-6. multi-step planner;
-7. až potom destruktivnější autonomní manipulace.
+1. audit skutečného rozhodování za běhu – zejména dlouhé série `look`;
+2. vypsat a analyzovat current goals, beliefs a reusable skills;
+3. ověřit, zda reusable skills skutečně mění budoucí volbu akcí;
+4. restart/recovery a delší soak test všech tří procesů;
+5. metabolismus/needs ve Worldu;
+6. goal/utility a risk learning v Alua;
+7. multi-step planner;
+8. až potom destruktivnější autonomní manipulace.
 
 ## Oprava CI 2026-10-06
 

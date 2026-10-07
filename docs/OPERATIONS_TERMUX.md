@@ -49,6 +49,12 @@ Aktualizace 2026-10-06: bod 3 už není ruční krok. První připojený tester 
     .venv/bin/python -m alua doctor
     .venv/bin/python -m alua status
 
+Před spuštěním `alua run` musí `doctor` ukázat aktivní session a `last_observation_sequence > 0`. Pokud je sequence 0, neopravovat policy naslepo; problém je před kognitivní vrstvou.
+
+`status` lze bezpečně spustit v jiné Termux session i za běhu Alua. Pouze čte lokální SQLite a nespouští druhý kognitivní runtime.
+
+Aktuální runtime považuje `409 target_expired` za recoverable stale-handle stav. Konkrétní decision označí `stale_target` a pokračuje dalším čerstvým vjemem; proces se na této chybě nesmí ukončit.
+
 ## Skutečný E2E smoke test
 
 Po spuštění Bridge a Worldu:
