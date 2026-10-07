@@ -246,3 +246,27 @@ Long-term SQLite episodes, beliefs, goal evidence a learned skills se zachováva
 Empiricky naučený primitive skill je pouze kandidát. Executive jej nepovolí, pokud nový percept hlásí překážku, critic stagnaci nebo lokální navigator doporučuje jiný směr. Dlouhodobá zkušenost tedy nesmí přebít čerstvou senzorickou evidenci.
 
 Podrobný kontrakt: `docs/COGNITIVE_ARCHITECTURE_V2.md`.
+
+## Adaptive Cognition V3 – persistentní zkušenost bez globální mapy
+
+Nad V2 je implementována další evidence vrstva:
+
+```text
+PerceptionFrame
+  -> PerceptualTopology
+       -> persistent place-like signature
+       -> maneuver transition evidence
+       -> navigation prior
+  -> AdaptiveUtilityModel
+       -> empirical goal success/failure
+       -> uncertainty / novelty / damage
+  -> V2 planner + executive
+```
+
+`PerceptualTopology` není world map. Je to graf opakujících se perceptuálních kontextů odvozených pouze z vlastních vjemů.
+
+Beliefs mají od schema v4 samostatné `belief_evidence`, takže lze auditovat konkrétní observation/decision evidence.
+
+Offline `benchmark` kombinuje decision/outcome trajectory s replay uložených sensory episodes.
+
+Podrobnosti: `docs/ADAPTIVE_COGNITION_V3.md`.
