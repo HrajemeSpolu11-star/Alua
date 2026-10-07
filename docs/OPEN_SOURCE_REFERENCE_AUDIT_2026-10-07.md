@@ -191,3 +191,26 @@ perception
 ```
 
 Tím se loop prevention přesouvá z jednotlivých ad-hoc podmínek na strukturální řízení chování.
+
+## Druhá implementační vlna – Adaptive Cognition V3
+
+Po první V2 implementaci byly z referencí vytěženy další principy, které jsou kompatibilní s filosofií Alua:
+
+- Voyager: curriculum není pevný seznam; V3 přidává evidence-weighted adaptive utility;
+- Mineflayer Pathfinder / Baritone: náklad směru se má měnit zkušeností; V3 persistuje maneuver success/failure evidence v perceptuálním kontextu;
+- Craftium / MineStudio: uložené trajectories mají být replayovatelné a benchmarkovatelné; V3 přidává sensory replay a `alua benchmark`;
+- výzkumné agentní systémy obecně: interní model musí mít provenance; schema v4 přidává `belief_evidence`.
+
+Nadále nebyl kopírován cizí zdrojový kód ani Minecraft-specific knowledge.
+
+### Funkce, které nebyly implementovány úmyslně
+
+Následující reference obsahují schopnosti, které jsou technicky zajímavé, ale pro současnou Alua by byly kontraproduktivní:
+
+- generování spustitelného kódu LLM agentem – porušuje bezpečný primitive-action model;
+- přímý globální map/pathfinder přístup – porušuje epistemickou hranici;
+- hotové Minecraft recipes/block semantics – ruší učení významu ze zkušenosti;
+- teleport/generate recovery – obchází fyzické tělo;
+- sdílená memory multi-agentů – obchází budoucí fyzickou komunikaci.
+
+Tyto body nejsou „zapomenutý backlog“, ale vědomě odmítnuté zkratky.
