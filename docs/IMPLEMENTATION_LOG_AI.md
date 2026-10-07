@@ -1,5 +1,21 @@
 # Implementační deník Alua AI
 
+## 2026-10-07 – Adaptive Cognition V3
+
+Po V2 byla implementována druhá část principů vytěžených z referenčních agentů: dlouhodobé cost evidence, trajectory replay a evidence-driven utility.
+
+Přidáno:
+- `utility.py`: adaptive goal ranking bez předprogramované sémantiky;
+- `topology.py`: persistentní sensory-only perceptual places a transitions;
+- schema v4 s `belief_evidence`, `perceptual_places`, `perceptual_transitions`;
+- LocalNavigator přijímá persistentní maneuver penalties;
+- úspěšný `look` invaliduje staré egocentrické sektory před ingestem nového view;
+- `session_episodes()` + sensory replay;
+- `alua benchmark` jako offline acceptance gate.
+
+Tato změna záměrně nerozšiřuje Bridge ani World a zachovává stávající embodied kontrakt.
+
+
 ## 2026-10-07 – Cognitive Architecture V2 podle open-source reference auditu
 
 Po stabilizaci embodied loopu nebyl další krok řešen další sérií lokálních `look/move` záplat. Byl proveden referenční audit Voyager, Odyssey, luanti-voyager, Mineflayer Pathfinder, Baritone, Craftium, MineStudio, OpenHA a Mindcraft.
