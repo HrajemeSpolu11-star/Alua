@@ -1,5 +1,12 @@
 # Implementační deník Alua AI
 
+## 2026-10-07 – druhý field fix: globální scan gate
+
+Po nasazení prvního brain auditu živý log stále ukázal několik po sobě jdoucích `look`. Důvodem bylo, že anti-loop logika byla oddělená pro `scan_obstacle`, `scan_recovery` a `scan_periodic`; různé scan kindy se tedy mohly střídat. Současně se používal `last_sequence` z dlouhodobých goal stats, přestože observation sequence se při nové World session resetuje.
+
+Runtime nyní načítá poslední Bridge přijatý goal pouze z aktuální session a curriculum používá jednu globální scan gate pro všechny scan kindy. Po libovolném scanu musí přijít non-scan goal, než může vzniknout další `look`.
+
+
 ## 2026-10-07 – audit mozku po prvním E2E běhu
 
 Živý World log po úspěšném propojení odhalil dlouhou sérii `look`. Audit ukázal, že nešlo o naučenou strategii, ale o starvation chybu intrinsic curriculum: po dostatečném počtu exploration failures mohl `scan_recovery` s prioritou kolem 0.84 trvale vítězit nad exploration kolem 0.50. Stejný vzor mohl vzniknout i u centrální překážky.
