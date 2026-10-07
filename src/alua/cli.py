@@ -21,6 +21,7 @@ def _parser() -> argparse.ArgumentParser:
 
     commands.add_parser("doctor", help="Ověří konfiguraci, DB a spojení s AluaBridge")
     commands.add_parser("status", help="Vypíše lokální stav kognitivní persistence")
+    commands.add_parser("cognition-status", help="Vypíše stav Cognitive Core V5 a jeho dlouhodobé modely")
     evaluate = commands.add_parser("evaluate", help="Vyhodnotí chování v aktuální World session")
     evaluate.add_argument("--limit", type=int, default=500, help="Maximální počet posledních rozhodnutí")
     benchmark = commands.add_parser("benchmark", help="Provede offline behaviorální a sensory acceptance test")
@@ -42,6 +43,49 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.command == "status":
                 print(json.dumps(store.summary(config.agent_id), ensure_ascii=False, indent=2))
+                return 0
+
+            if args.command == "cognition-status":
+                records = store.cognitive_records(
+                    config.agent_id,
+                    limit=5000,
+                )
+                kinds: dict[str, int] = {}
+                for record in records:
+                    kind = str(record.get("record_kind") or "unknown")
+                    kinds[kind] = kinds.get(kind, 0) + 1
+                last_state = store.cognitive_record(
+                    config.agent_id,
+                    "cognition:last-state",
+                )
+                missions = [
+                    record
+                    for record in records
+                    if record.get("record_kind") == "mission"
+                    and record.get("payload", {}).get("active") is True
+                ]
+                result = {
+                    "agent_id": config.agent_id,
+                    "session_id": store.state(config.agent_id).get("session_id"),
+                    "schema_version": store.summary(config.agent_id)["schema_version"],
+                    "record_counts": dict(sorted(kinds.items())),
+                    "active_missions": [
+                        {
+                            "key": item["payload"].get("key"),
+                            "kind": item["payload"].get("kind"),
+                            "priority": item["payload"].get("priority"),
+                            "stage": item["payload"].get("stage"),
+                            "confidence": item.get("confidence"),
+                        }
+                        for item in missions[:16]
+                    ],
+                    "last_cognitive_state": (
+                        last_state.get("payload")
+                        if last_state
+                        else None
+                    ),
+                }
+                print(json.dumps(result, ensure_ascii=False, indent=2))
                 return 0
 
             if args.command == "evaluate":
