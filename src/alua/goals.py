@@ -78,10 +78,13 @@ class IntrinsicCurriculum:
         novel_appearance_ids: set[str],
         memory: WorkingMemory,
         goal_stats: Callable[[str], dict[str, Any] | None],
+        previous_goal_kind: str | None = None,
     ) -> GoalCandidate:
         candidates: list[GoalCandidate] = []
         nearest = self._nearest_target(frame, require_target_ref=True)
         explore_stats = goal_stats("explore:open")
+        scan_kinds = {"scan_obstacle", "scan_recovery", "scan_periodic"}
+        scan_allowed = previous_goal_kind not in scan_kinds
 
         if (
             nearest
@@ -119,63 +122,57 @@ class IntrinsicCurriculum:
 
         central = next((target for target in frame.targets if target.ray_index == 0), None)
         if (
-            central
+            scan_allowed
+            and central
             and central.blocks_motion
             and central.distance_fraction is not None
             and central.distance_fraction < 0.12
         ):
             key = "scan:obstacle"
             scan_stats = goal_stats(key)
-            last_scan = int(scan_stats.get("last_sequence", -1)) if scan_stats else -1
-            last_explore = int(explore_stats.get("last_sequence", -1)) if explore_stats else -1
-            # Jedno rozhlédnutí musí být následováno pokusem o pohyb. Bez této
-            # brány mohl úspěšný look zůstat nejvyšší prioritou donekonečna.
-            needs_scan = scan_stats is None or last_explore > last_scan
-            if needs_scan:
-                attempts = int(scan_stats.get("attempts", 0)) if scan_stats else 0
-                candidates.append(
-                    GoalCandidate(
-                        key=key,
-                        kind="scan_obstacle",
-                        priority=self._adjust_priority(0.78, scan_stats),
-                        reason={
-                            "selector": "intrinsic_curriculum",
-                            "distance_fraction": central.distance_fraction,
-                            "scan_attempt": attempts + 1,
-                            "after_explore_sequence": last_explore,
-                        },
-                    )
+            attempts = int(scan_stats.get("attempts", 0)) if scan_stats else 0
+            candidates.append(
+                GoalCandidate(
+                    key=key,
+                    kind="scan_obstacle",
+                    priority=self._adjust_priority(0.78, scan_stats),
+                    reason={
+                        "selector": "intrinsic_curriculum",
+                        "distance_fraction": central.distance_fraction,
+                        "scan_attempt": attempts + 1,
+                        "global_scan_gate": "open",
+                    },
                 )
+            )
 
         explore_failures = int(explore_stats.get("failures", 0)) if explore_stats else 0
         explore_successes = int(explore_stats.get("successes", 0)) if explore_stats else 0
-        if explore_stats and explore_failures >= 2 and explore_failures > explore_successes:
+        if (
+            scan_allowed
+            and explore_stats
+            and explore_failures >= 2
+            and explore_failures > explore_successes
+        ):
             key = "scan:recovery"
             recovery_stats = goal_stats(key)
-            last_recovery = int(recovery_stats.get("last_sequence", -1)) if recovery_stats else -1
-            last_explore = int(explore_stats.get("last_sequence", -1))
-            # Recovery scan je reakce na NOVÝ neúspěšný pokus o exploration.
-            # Po jednom scanu musí agent zkusit jinou motorickou akci, jinak
-            # vzniká nekonečný look loop.
-            if recovery_stats is None or last_explore > last_recovery:
-                attempts = int(recovery_stats.get("attempts", 0)) if recovery_stats else 0
-                candidates.append(
-                    GoalCandidate(
-                        key=key,
-                        kind="scan_recovery",
-                        priority=self._adjust_priority(0.84, recovery_stats),
-                        reason={
-                            "selector": "intrinsic_curriculum",
-                            "trigger": "repeated_exploration_failure",
-                            "explore_failures": explore_failures,
-                            "explore_successes": explore_successes,
-                            "scan_attempt": attempts + 1,
-                            "after_explore_sequence": last_explore,
-                        },
-                    )
+            attempts = int(recovery_stats.get("attempts", 0)) if recovery_stats else 0
+            candidates.append(
+                GoalCandidate(
+                    key=key,
+                    kind="scan_recovery",
+                    priority=self._adjust_priority(0.84, recovery_stats),
+                    reason={
+                        "selector": "intrinsic_curriculum",
+                        "trigger": "repeated_exploration_failure",
+                        "explore_failures": explore_failures,
+                        "explore_successes": explore_successes,
+                        "scan_attempt": attempts + 1,
+                        "global_scan_gate": "open",
+                    },
                 )
+            )
 
-        if frame.sequence % 5 == 0:
+        if scan_allowed and frame.sequence % 5 == 0:
             key = "scan:periodic"
             periodic_stats = goal_stats(key)
             attempts = int(periodic_stats.get("attempts", 0)) if periodic_stats else 0
