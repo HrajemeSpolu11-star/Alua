@@ -98,3 +98,35 @@ E2E helper vyžaduje aktivní session, epizodu, decision a alespoň jeden learne
 ## Body schema
 
 `tests/test_policy.py` ověřuje, že touch používá `hand_right`, a při její obsazenosti `hand_left`. Chybějící či neplatný signál nesmí shodit runtime. Test neposuzuje fyzický úspěch z ACK; ten nadále patří do pozdější sensory attribution.
+
+## Cognitive V2 behaviorální kontrola
+
+Po live běhu lze bez dalšího přístupu do Worldu vyhodnotit aktuální session:
+
+```bash
+cd "$HOME/alua/Alua"
+set -a
+. ./.env
+set +a
+.venv/bin/python -m alua evaluate --limit 2000
+```
+
+Minimální acceptance po stabilizačním běhu:
+- `consecutive_look_pairs = 0` v běžné exploraci;
+- `longest_look_streak <= 1`, pokud nebyl explicitní jiný non-scan look mechanismus;
+- `action_stereotype_detected = false`;
+- při alespoň pěti resolved moves nemá být `low_move_success = true`;
+- stale target může vzniknout, ale nesmí ukončit runtime.
+
+Nové unit testy pokrývají:
+- egocentrický world model;
+- blocked-front frontier selection;
+- navigation failure penalty;
+- repeated-look critic;
+- repeated-move-failure critic;
+- composite obstacle plan;
+- plan advance po skutečném sensory outcome;
+- session reset V2 state;
+- uncertainty-driven scan;
+- decision/outcome trajectory join;
+- evaluator quality flags.
