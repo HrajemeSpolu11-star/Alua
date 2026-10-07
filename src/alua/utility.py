@@ -28,7 +28,13 @@ class AdaptiveUtilityModel:
     """
 
     _COSTS = {
+        "survive_breath": 0.00,
         "survive_damage": 0.00,
+        "recover_stamina": 0.005,
+        "satisfy_thirst": 0.02,
+        "satisfy_hunger": 0.025,
+        "collect_object": 0.05,
+        "acquire_required_resource": 0.12,
         "inspect_object": 0.05,
         "scan_obstacle": 0.025,
         "scan_recovery": 0.025,
@@ -70,7 +76,7 @@ class AdaptiveUtilityModel:
             information_value = 0.06 * need
 
         damage = memory.recent_damage_signal()
-        if candidate.kind == "survive_damage":
+        if candidate.kind in {"survive_damage", "survive_breath"}:
             damage_risk = -0.50 * damage
         else:
             damage_risk = 0.34 * damage
@@ -90,7 +96,7 @@ class AdaptiveUtilityModel:
             - damage_risk
             - action_cost
         )
-        if candidate.kind == "survive_damage":
+        if candidate.kind in {"survive_damage", "survive_breath"}:
             total += 1.0
 
         return UtilityBreakdown(
