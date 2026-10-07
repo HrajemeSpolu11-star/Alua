@@ -9,6 +9,7 @@ import sys
 from .bridge_client import BridgeClient
 from .config import Config
 from .errors import AluaError
+from .evaluation import evaluate_trace
 from .runtime import Runtime
 from .store import Store
 
@@ -20,6 +21,8 @@ def _parser() -> argparse.ArgumentParser:
 
     commands.add_parser("doctor", help="Ověří konfiguraci, DB a spojení s AluaBridge")
     commands.add_parser("status", help="Vypíše lokální stav kognitivní persistence")
+    evaluate = commands.add_parser("evaluate", help="Vyhodnotí chování v aktuální World session")
+    evaluate.add_argument("--limit", type=int, default=500, help="Maximální počet posledních rozhodnutí")
     run = commands.add_parser("run", help="Spustí kognitivní runtime")
     run.add_argument("--once", action="store_true", help="Provede právě jeden cyklus")
     return parser
@@ -37,6 +40,17 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.command == "status":
                 print(json.dumps(store.summary(config.agent_id), ensure_ascii=False, indent=2))
+                return 0
+
+            if args.command == "evaluate":
+                trace = store.session_trace(config.agent_id, limit=args.limit)
+                result = {
+                    "agent_id": config.agent_id,
+                    "session_id": store.state(config.agent_id).get("session_id"),
+                    "trace_limit": max(1, min(5000, int(args.limit))),
+                    "metrics": evaluate_trace(trace),
+                }
+                print(json.dumps(result, ensure_ascii=False, indent=2))
                 return 0
 
             bridge = BridgeClient(config)
