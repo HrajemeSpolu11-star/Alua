@@ -203,6 +203,37 @@ class SkillLibraryTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_contextual_obstacle_bypass_is_not_learned_as_generic_explore_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            library = SkillLibrary()
+            expectation = {
+                "goal_kind": "explore",
+                "target_signature": None,
+                "action": {
+                    "type": "move",
+                    "parameters": {
+                        "forward": 0.10,
+                        "strafe": 0.70,
+                        "duration_s": 0.35,
+                        "speed_fraction": 0.45,
+                    },
+                },
+            }
+            try:
+                self.assertIsNone(
+                    library.learn(
+                        store,
+                        "alua:1",
+                        expectation,
+                        supported=True,
+                        sequence=1,
+                    )
+                )
+                self.assertEqual(store.summary("alua:1")["skills"], 0)
+            finally:
+                store.close()
+
     def test_persisted_skill_never_contains_target_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "alua.sqlite3"
