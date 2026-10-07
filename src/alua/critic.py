@@ -61,7 +61,13 @@ class BehaviorCritic:
         if len(self._move_outcomes) >= 3 and not any(list(self._move_outcomes)[-3:]):
             reasons.append("three_failed_moves")
 
-        if len(goal_kinds) >= 8 and len(set(goal_kinds[-8:])) == 1:
+        recent_moves = list(self._move_outcomes)[-4:]
+        if (
+            len(goal_kinds) >= 8
+            and len(set(goal_kinds[-8:])) == 1
+            and len(recent_moves) >= 4
+            and sum(1 for value in recent_moves if value) <= 1
+        ):
             reasons.append("goal_stagnation")
 
         return Critique(
