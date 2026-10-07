@@ -21,6 +21,7 @@ from .self_model import SelfModel
 from .social import SocialCognition
 from .spatial_memory import SpatialDirective, SpatialMemory
 from .store import Store
+from .strategy import StrategyLearner
 from .temporal import TemporalModel, TemporalPattern
 from .topology import PerceptualTopology
 from .world_model import EgocentricWorldModel
@@ -158,6 +159,7 @@ class CognitiveCore:
         self.experiments = ExperimentPlanner()
         self.missions = MissionManager()
         self.social = SocialCognition()
+        self.strategy = StrategyLearner()
         self.consolidator = MemoryConsolidator()
         self.snapshot: CognitiveSnapshot | None = None
         self._pending_context: str | None = None
@@ -251,7 +253,22 @@ class CognitiveCore:
         )
         if not scored:
             return None
-        action, score, prediction = scored[0]
+        adjusted = []
+        for action, score, prediction in scored:
+            strategy = self.strategy.estimate(
+                store,
+                agent_id=agent_id,
+                goal_kind="explore",
+                action=action,
+            )
+            transfer_bonus = 0.18 * strategy.confidence * (
+                strategy.score - 0.5
+            )
+            adjusted.append(
+                (action, score + transfer_bonus, prediction, strategy)
+            )
+        adjusted.sort(key=lambda item: item[1], reverse=True)
+        action, score, prediction, strategy = adjusted[0]
         result = {
             "type": action["type"],
             "parameters": dict(action["parameters"]),
@@ -270,6 +287,8 @@ class CognitiveCore:
                     4,
                 ),
                 "alternatives": len(scored),
+                "strategy_score": round(strategy.score, 4),
+                "strategy_confidence": round(strategy.confidence, 4),
             },
         }
         return result
@@ -508,6 +527,17 @@ class CognitiveCore:
             event=event,
             sequence=frame.sequence,
         )
+        goal_kind = expectation.get("goal_kind")
+        if isinstance(goal_kind, str) and goal_kind:
+            self.strategy.learn(
+                store,
+                agent_id=agent_id,
+                goal_kind=goal_kind,
+                action=action,
+                supported=supported,
+                progress=progress,
+                sequence=frame.sequence,
+            )
         self.spatial.finish_action(
             action,
             supported,
