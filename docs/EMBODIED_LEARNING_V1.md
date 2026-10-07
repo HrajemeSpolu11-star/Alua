@@ -65,6 +65,12 @@ Pokud motorický výsledek nedorazí, expectation po omezeném počtu observatio
 
 Expirace není fyzický neúspěch. Znamená pouze nedostatek spolehlivé evidence.
 
+## Reálně ověřený stav 2026-10-07
+
+Tento loop už byl ověřen na skutečném Android/Termux běhu, nikoli jen unit testem. Agent dosáhl 482 episodes, 235 decisions, 9 beliefs, 12 skills a 6 reusable skills a fyzické tělo vykonávalo úspěšné `look`/pohybové akce.
+
+Součástí ověření je recovery z expirovaného `target_ref`: stale handle nesmí vytvořit falešnou expectation ani ukončit runtime. Detailní průběh je v `docs/E2E_RUNTIME_2026-10-07.md`.
+
 ## Skutečný E2E test
 
 Na telefonu se po spuštění všech tří částí používá:
