@@ -237,3 +237,18 @@ Po V3 je správné pořadí:
 7. fyzická komunikace více agentů.
 
 Destruktivní `break_object` zůstává vypnutý, dokud Alua nemá dostatečně vyspělý risk/utility a recovery model.
+
+## Terénní korekce motorického učení
+
+Field test po V3 ukázal, že persistentní transition learning je pouze tak dobrý jako motorická evidence z Worldu.
+
+V3 proto nyní používá graded locomotion quality:
+- `progress_signal` = normalizovaný projected postup v požadovaném směru;
+- `slip_signal` = podíl pohybu mimo požadovaný směr;
+- `partial_effect` = fyzický efekt, který nestačí jako navigační success.
+
+Persistentní transition evidence, goal outcome, skill evidence i local navigation penalty používají stejný motor-success invariant.
+
+Stagnation recovery už není jen další pohybový manévr. Composite skill nejprve fyzicky změní orientaci těla a potom z nového sensory frame pokračuje escape pohybem.
+
+Detail: `docs/INCIDENT_2026-10-07_ONE_BLOCK_BOUNCE.md`.
