@@ -7,8 +7,10 @@ from .attention import AttentionState, AttentionSystem
 from .causal import CausalLearner
 from .consolidation import ConsolidationReport, MemoryConsolidator
 from .drives import DriveState, DriveSystem
+from .experiments import ExperimentPlanner, ExperimentProposal
 from .memory import WorkingMemory
 from .metacognition import MetaState, Metacognition
+from .missions import Mission, MissionManager
 from .object_memory import ObjectMemory
 from .perception import PerceptionFrame
 from .predictive import PredictiveModel, action_signature
@@ -31,6 +33,8 @@ class CognitiveSnapshot:
     spatial_directive: SpatialDirective | None
     deliberative_action: dict[str, Any] | None
     prospective_intents: tuple[ProspectiveIntent, ...]
+    experiment: ExperimentProposal | None
+    missions: tuple[Mission, ...]
     self_state: dict[str, float]
     social_entities: int
     consolidation: ConsolidationReport | None
@@ -92,6 +96,25 @@ class CognitiveSnapshot:
                 }
                 for item in self.prospective_intents[:8]
             ],
+            "experiment": (
+                {
+                    "kind": self.experiment.kind,
+                    "target_signature": self.experiment.target_signature,
+                    "information_value": round(self.experiment.information_value, 4),
+                    "reason": self.experiment.reason,
+                }
+                if self.experiment
+                else None
+            ),
+            "missions": [
+                {
+                    "key": item.key,
+                    "kind": item.kind,
+                    "priority": item.priority,
+                    "stage": item.stage,
+                }
+                for item in self.missions[:8]
+            ],
             "self_state": {
                 key: round(value, 4)
                 for key, value in self.self_state.items()
@@ -114,6 +137,8 @@ class CognitiveCore:
         self.meta = Metacognition()
         self.drives = DriveSystem()
         self.prospective = ProspectiveMemory()
+        self.experiments = ExperimentPlanner()
+        self.missions = MissionManager()
         self.social = SocialCognition()
         self.consolidator = MemoryConsolidator()
         self.snapshot: CognitiveSnapshot | None = None
@@ -289,6 +314,51 @@ class CognitiveCore:
             attention,
             meta,
         )
+
+        if drives.safety < 0.55 and drives.homeostasis < 0.72:
+            self.missions.ensure(
+                store,
+                agent_id=agent_id,
+                key="understand-environment",
+                kind="open_world_learning",
+                priority=min(0.88, 0.52 + 0.28 * drives.curiosity),
+                sequence=frame.sequence,
+                stage="active",
+                payload={
+                    "current_context": context_signature,
+                    "curiosity": drives.curiosity,
+                },
+            )
+        elif drives.homeostasis >= 0.78:
+            self.missions.suspend(
+                store,
+                agent_id=agent_id,
+                key="understand-environment",
+                reason="homeostatic_need",
+                sequence=frame.sequence,
+            )
+
+        experiment = None
+        if (
+            drives.safety < 0.50
+            and drives.homeostasis < 0.65
+            and (
+                meta.recommended_mode == "seek_information"
+                or attention.surprise >= 0.45
+                or drives.curiosity >= 0.62
+            )
+        ):
+            experiment = self.experiments.propose(
+                frame,
+                attention,
+                store,
+                agent_id=agent_id,
+            )
+
+        active_missions = self.missions.active(
+            store,
+            agent_id=agent_id,
+        )
         social_entities = self.social.observe(
             frame,
             store,
@@ -327,6 +397,8 @@ class CognitiveCore:
             spatial_directive=directive,
             deliberative_action=deliberative,
             prospective_intents=due,
+            experiment=experiment,
+            missions=active_missions,
             self_state=self.self_model.body_state(frame),
             social_entities=len(social_entities),
             consolidation=consolidation,
