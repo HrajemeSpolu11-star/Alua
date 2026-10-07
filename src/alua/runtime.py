@@ -145,6 +145,7 @@ class Runtime:
                 previous_goal_kind=previous_goal_kind
                 if isinstance(previous_goal_kind, str)
                 else None,
+                information_need=self.executive.world_model.horizontal_uncertainty(),
             ),
             False,
         )
