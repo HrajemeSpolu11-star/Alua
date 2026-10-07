@@ -12,7 +12,7 @@ from .config import Config
 from .errors import BridgeHttpError, BridgeUnavailable, ProtocolError
 from .executive import ExecutiveController
 from .goals import GoalCandidate, IntrinsicCurriculum, ReflexGoalSelector
-from .learning import learn_from_motor_outcome, motor_success
+from .learning import learn_from_motor_outcome, motor_quality, motor_success
 from .memory import WorkingMemory
 from .perception import PerceptionFrame, build_frame
 from .policy import ExplorationPolicy
@@ -106,7 +106,12 @@ class Runtime:
                     succeeded,
                     frame,
                 )
-            self.executive.on_outcome(expectation, succeeded, frame)
+            self.executive.on_outcome(
+                expectation,
+                succeeded,
+                frame,
+                quality=motor_quality(event),
+            )
             learn_from_motor_outcome(
                 self.store,
                 self.config.agent_id,
@@ -151,6 +156,7 @@ class Runtime:
             session_id,
         )
         previous_goal_kind = previous.get("goal_kind") if previous else None
+        previous_action_type = previous.get("action_type") if previous else None
         information_need = self.executive.world_model.horizontal_uncertainty()
 
         def rank(candidate: GoalCandidate) -> float:
@@ -170,6 +176,9 @@ class Runtime:
                 lambda key: self.store.goal_stats(self.config.agent_id, key),
                 previous_goal_kind=previous_goal_kind
                 if isinstance(previous_goal_kind, str)
+                else None,
+                previous_action_type=previous_action_type
+                if isinstance(previous_action_type, str)
                 else None,
                 information_need=information_need,
                 candidate_ranker=rank,
