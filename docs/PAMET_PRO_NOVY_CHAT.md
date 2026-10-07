@@ -2,6 +2,22 @@
 
 Aktualizováno: 2026-10-07.
 
+## Adaptive Cognition V3 – 2026-10-07
+
+Nad Cognitive V2 byla doplněna dlouhodobá adaptivní vrstva:
+- `AdaptiveUtilityModel` rankuje intrinsic cíle podle vlastní evidence, uncertainty, novelty a damage;
+- `PerceptualTopology` persistuje sensory-only place signatures a move transitions;
+- LocalNavigator používá historické transition penalties;
+- po úspěšném `look` se invaliduje starý egocentrický view frame;
+- SQLite schema je v4 a přidává `belief_evidence`, `perceptual_places`, `perceptual_transitions`;
+- beliefs mají dohledatelnou observation/decision provenance;
+- `alua benchmark` umí offline sensory replay + behavior acceptance.
+
+Existující DB se nemaže; před první migrací do v4 se automaticky vytvoří backup.
+
+Autoritativní dokument: `docs/ADAPTIVE_COGNITION_V3.md`.
+
+
 ## Cognitive Architecture V2 – 2026-10-07
 
 Po porovnání s Voyager, Odyssey, luanti-voyager, Mineflayer Pathfinder, Baritone, Craftium, MineStudio, OpenHA a Mindcraft byla nad funkční V1 přidána hierarchická vrstva bez bourání embodied kontraktu.
