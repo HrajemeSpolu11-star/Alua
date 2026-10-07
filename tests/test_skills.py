@@ -234,6 +234,37 @@ class SkillLibraryTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_reconcile_deactivates_legacy_scan_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            library = SkillLibrary()
+            try:
+                record = None
+                for sequence in range(1, 4):
+                    record = store.update_skill_evidence(
+                        agent_id="alua:1",
+                        skill_key="legacy-scan",
+                        kind="look",
+                        goal_kind="scan_recovery",
+                        target_signature=None,
+                        steps=[{
+                            "type": "look",
+                            "parameters": {
+                                "yaw_delta_rad": 0.45,
+                                "pitch_delta_rad": 0.0,
+                            },
+                        }],
+                        supported=True,
+                        sequence=sequence,
+                        min_successes=3,
+                        min_confidence=0.70,
+                    )
+                self.assertTrue(record["reusable"])
+                self.assertEqual(library.reconcile(store, "alua:1"), 1)
+                self.assertFalse(store.skill("alua:1", "legacy-scan")["reusable"])
+            finally:
+                store.close()
+
     def test_persisted_skill_never_contains_target_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "alua.sqlite3"
