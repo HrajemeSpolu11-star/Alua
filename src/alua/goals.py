@@ -80,6 +80,7 @@ class IntrinsicCurriculum:
         goal_stats: Callable[[str], dict[str, Any] | None],
         previous_goal_kind: str | None = None,
         information_need: float | None = None,
+        candidate_ranker: Callable[[GoalCandidate], float] | None = None,
     ) -> GoalCandidate:
         candidates: list[GoalCandidate] = []
         nearest = self._nearest_target(frame, require_target_ref=True)
@@ -218,4 +219,18 @@ class IntrinsicCurriculum:
             )
         )
 
-        return max(candidates, key=lambda item: (item.priority, item.key))
+        if candidate_ranker is None:
+            return max(candidates, key=lambda item: (item.priority, item.key))
+
+        scored = [(float(candidate_ranker(item)), item) for item in candidates]
+        score, selected = max(scored, key=lambda pair: (pair[0], pair[1].priority, pair[1].key))
+        reason = dict(selected.reason or {})
+        reason["adaptive_utility_score"] = round(score, 6)
+        return GoalCandidate(
+            key=selected.key,
+            kind=selected.kind,
+            priority=selected.priority,
+            target_ref=selected.target_ref,
+            target_signature=selected.target_signature,
+            reason=reason,
+        )
