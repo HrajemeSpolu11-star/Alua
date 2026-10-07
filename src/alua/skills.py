@@ -47,6 +47,13 @@ class SkillLibrary:
     min_successes = 3
     min_confidence = 0.70
 
+    def reconcile(self, store: Store, agent_id: str) -> int:
+        """Deactivate legacy reusable skills that current policy no longer permits."""
+        return store.deactivate_reusable_skills_outside(
+            agent_id,
+            frozenset(LEARNABLE_GOAL_KINDS),
+        )
+
     @staticmethod
     def skill_key(goal_kind: str, target_signature: str | None, step: dict[str, Any]) -> str:
         payload = canonical_json({
