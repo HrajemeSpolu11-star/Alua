@@ -147,7 +147,9 @@ class IntrinsicCurriculum:
                     )
                 )
 
-        if explore_stats and int(explore_stats.get("failures", 0)) >= 2:
+        explore_failures = int(explore_stats.get("failures", 0)) if explore_stats else 0
+        explore_successes = int(explore_stats.get("successes", 0)) if explore_stats else 0
+        if explore_stats and explore_failures >= 2 and explore_failures > explore_successes:
             key = "scan:recovery"
             recovery_stats = goal_stats(key)
             last_recovery = int(recovery_stats.get("last_sequence", -1)) if recovery_stats else -1
@@ -165,7 +167,8 @@ class IntrinsicCurriculum:
                         reason={
                             "selector": "intrinsic_curriculum",
                             "trigger": "repeated_exploration_failure",
-                            "explore_failures": int(explore_stats.get("failures", 0)),
+                            "explore_failures": explore_failures,
+                            "explore_successes": explore_successes,
                             "scan_attempt": attempts + 1,
                             "after_explore_sequence": last_explore,
                         },
