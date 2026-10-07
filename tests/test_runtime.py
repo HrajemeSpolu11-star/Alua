@@ -79,8 +79,10 @@ class FakeBridge:
 
 class ExpiredTargetBridge(FakeBridge):
     def submit_action(self, action):
-        self.actions.append(action)
-        raise BridgeHttpError(409, "target_expired", "target_ref není platný pro tohoto agenta")
+        if "target_ref" in action:
+            self.actions.append(action)
+            raise BridgeHttpError(409, "target_expired", "target_ref není platný pro tohoto agenta")
+        return super().submit_action(action)
 
 
 class RuntimeTests(unittest.TestCase):
