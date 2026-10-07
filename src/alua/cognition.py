@@ -16,10 +16,12 @@ from .perception import PerceptionFrame
 from .predictive import PredictiveModel, action_signature
 from .prospective import ProspectiveIntent, ProspectiveMemory
 from .risk import RiskModel
+from .scene import SceneIntegrator, SceneState
 from .self_model import SelfModel
 from .social import SocialCognition
 from .spatial_memory import SpatialDirective, SpatialMemory
 from .store import Store
+from .temporal import TemporalModel, TemporalPattern
 from .topology import PerceptualTopology
 from .world_model import EgocentricWorldModel
 
@@ -27,6 +29,8 @@ from .world_model import EgocentricWorldModel
 @dataclass(frozen=True, slots=True)
 class CognitiveSnapshot:
     context_signature: str
+    scene: SceneState
+    temporal_pattern: TemporalPattern
     attention: AttentionState
     meta: MetaState
     drives: DriveState
@@ -42,6 +46,18 @@ class CognitiveSnapshot:
     def diagnostics(self) -> dict[str, Any]:
         return {
             "context_signature": self.context_signature,
+            "scene": {
+                "signature": self.scene.signature,
+                "visual_targets": self.scene.visual_targets,
+                "auditory_events": self.scene.auditory_events,
+                "body_pressure": round(self.scene.body_pressure, 4),
+                "temporal_occurrences": self.temporal_pattern.occurrences,
+                "temporal_mean_interval": (
+                    round(self.temporal_pattern.mean_interval, 4)
+                    if self.temporal_pattern.mean_interval is not None
+                    else None
+                ),
+            },
             "attention": {
                 "kind": self.attention.focus_kind,
                 "signature": self.attention.focus_signature,
@@ -132,6 +148,8 @@ class CognitiveCore:
         self.spatial = SpatialMemory()
         self.predictive = PredictiveModel()
         self.risk = RiskModel()
+        self.scene = SceneIntegrator()
+        self.temporal = TemporalModel()
         self.self_model = SelfModel()
         self.causal = CausalLearner()
         self.meta = Metacognition()
@@ -150,6 +168,7 @@ class CognitiveCore:
         self.objects.reset_session()
         self.spatial.reset_session()
         self.meta.reset_session()
+        self.temporal.reset_session()
         self.snapshot = None
         self._pending_context = None
         self._pending_action = None
@@ -267,6 +286,14 @@ class CognitiveCore:
         agent_id: str,
         session_id: str,
     ) -> CognitiveSnapshot:
+        scene_state = self.scene.integrate(frame)
+        temporal_pattern = self.temporal.observe(
+            store,
+            agent_id=agent_id,
+            signature=scene_state.signature,
+            simulation_time=frame.simulation_time,
+            sequence=frame.sequence,
+        )
         attention = self.attention.assess(
             frame,
             novel_appearance_ids,
@@ -391,6 +418,8 @@ class CognitiveCore:
 
         snapshot = CognitiveSnapshot(
             context_signature=context_signature,
+            scene=scene_state,
+            temporal_pattern=temporal_pattern,
             attention=attention,
             meta=meta,
             drives=drives,
