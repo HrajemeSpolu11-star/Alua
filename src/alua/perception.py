@@ -6,7 +6,7 @@ from typing import Any
 
 @dataclass(frozen=True, slots=True)
 class TargetPercept:
-    target_ref: str
+    target_ref: str | None
     appearance_id: str | None
     distance_fraction: float | None
     blocks_motion: bool | None
@@ -25,7 +25,11 @@ class PerceptionFrame:
 
     @property
     def target_refs(self) -> tuple[str, ...]:
-        return tuple(target.target_ref for target in self.targets)
+        return tuple(
+            target.target_ref
+            for target in self.targets
+            if target.target_ref is not None
+        )
 
 
 def _sanitize(value: Any, appearances: list[str]) -> Any:
@@ -62,15 +66,33 @@ def _targets(channels: dict[str, Any]) -> tuple[TargetPercept, ...]:
             continue
         target_ref = ray.get("target_ref")
         if not isinstance(target_ref, str) or not target_ref:
-            continue
+            target_ref = None
         appearance_id = ray.get("appearance_id")
+        if not isinstance(appearance_id, str) or not appearance_id:
+            appearance_id = None
+        distance = _number(ray.get("distance_fraction"))
+        blocks_motion = ray.get("blocks_motion") if isinstance(ray.get("blocks_motion"), bool) else None
+        liquid = ray.get("liquid") if isinstance(ray.get("liquid"), bool) else None
+
+        # target_ref je pouze krátkodobý motorický handle. Jeho expirace nesmí
+        # smazat samotný zrakový vjem; distance/appearance/blocks_motion zůstávají
+        # použitelné pro navigaci a učení.
+        if (
+            target_ref is None
+            and appearance_id is None
+            and distance is None
+            and blocks_motion is None
+            and liquid is None
+        ):
+            continue
+
         result.append(
             TargetPercept(
                 target_ref=target_ref,
-                appearance_id=appearance_id if isinstance(appearance_id, str) else None,
-                distance_fraction=_number(ray.get("distance_fraction")),
-                blocks_motion=ray.get("blocks_motion") if isinstance(ray.get("blocks_motion"), bool) else None,
-                liquid=ray.get("liquid") if isinstance(ray.get("liquid"), bool) else None,
+                appearance_id=appearance_id,
+                distance_fraction=distance,
+                blocks_motion=blocks_motion,
+                liquid=liquid,
                 ray_index=index,
             )
         )
