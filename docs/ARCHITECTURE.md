@@ -207,3 +207,42 @@ Primární vývoj probíhá i na telefonu:
         runtime
 
 Vyšší vrstva nesmí obcházet nižší hranici.
+
+## Implementovaný Cognitive V2 – 2026-10-07
+
+Původně navržená planning vrstva je nyní reálně implementována jako několik malých modulů:
+
+```text
+PerceptionFrame
+  -> WorkingMemory
+  -> EgocentricWorldModel
+  -> ReflexGoalSelector / IntrinsicCurriculum
+  -> ExecutiveController
+       -> BehaviorCritic
+       -> SkillGraph
+       -> BoundedPlanner
+       -> LocalNavigator / ExplorationPolicy
+  -> ActionRequest
+```
+
+### Vlastnictví
+
+- `world_model.py`: pouze lokální smyslově odvozený stav, žádná globální mapa;
+- `critic.py`: loop/stagnation evidence a replan signál;
+- `skill_graph.py`: data-only composite behavior skills;
+- `planning.py`: bounded rozklad high-level goalu na controller steps;
+- `navigation.py`: cost-based lokální movement selection;
+- `executive.py`: lifecycle aktivního plánu a koordinace modulů;
+- `evaluation.py`: read-only hodnocení decision/outcome trajectory.
+
+### Session boundary
+
+World model, active plan, critic history a navigation failure penalties jsou lokální stav konkrétní session. Při změně `session_id` se resetují spolu s WorkingMemory.
+
+Long-term SQLite episodes, beliefs, goal evidence a learned skills se zachovávají.
+
+### Naučené skills vs. aktuální plán
+
+Empiricky naučený primitive skill je pouze kandidát. Executive jej nepovolí, pokud nový percept hlásí překážku, critic stagnaci nebo lokální navigator doporučuje jiný směr. Dlouhodobá zkušenost tedy nesmí přebít čerstvou senzorickou evidenci.
+
+Podrobný kontrakt: `docs/COGNITIVE_ARCHITECTURE_V2.md`.
