@@ -169,6 +169,11 @@ class ExecutiveController:
         goal: GoalCandidate,
         sequence: int,
     ) -> None:
+        if intent.rationale.get("policy") == "reusable_skill":
+            # Learned primitive reuse is an execution shortcut outside the
+            # current macro plan; never advance a stale macro from its outcome.
+            self.active_plan = None
+            self.step_index = 0
         self.critic.record_submission(intent.action_type, goal.kind, sequence)
         if intent.action_type == "move":
             self.navigator.record_maneuver(
