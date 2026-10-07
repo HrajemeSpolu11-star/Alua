@@ -215,6 +215,27 @@ class Runtime:
                     ),
                     False,
                 )
+            if cognitive_snapshot.experiment is not None:
+                experiment = cognitive_snapshot.experiment
+                return (
+                    GoalCandidate(
+                        key=f"experiment:{experiment.kind}:{experiment.target_signature}",
+                        kind="inspect_object",
+                        priority=min(
+                            0.98,
+                            0.62 + 0.30 * experiment.information_value,
+                        ),
+                        target_ref=experiment.target_ref,
+                        target_signature=experiment.target_signature,
+                        reason={
+                            "selector": "active_experiment",
+                            "experiment_kind": experiment.kind,
+                            "information_value": experiment.information_value,
+                            "experiment_reason": experiment.reason,
+                        },
+                    ),
+                    False,
+                )
         previous = self.store.latest_submitted_goal(
             self.config.agent_id,
             session_id,
@@ -236,6 +257,12 @@ class Runtime:
                 if candidate.kind == "explore":
                     score += 0.24 * drives.exploration
                     score -= 0.18 * drives.frustration
+                    if any(
+                        mission.kind == "open_world_learning"
+                        and mission.stage == "active"
+                        for mission in cognitive_snapshot.missions
+                    ):
+                        score += 0.10
                 elif candidate.kind == "inspect_object":
                     score += 0.22 * drives.curiosity
                 elif candidate.kind in {
