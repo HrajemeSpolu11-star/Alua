@@ -93,6 +93,11 @@ class EgocentricWorldModel:
         self._history.clear()
         self.sequence = 0
 
+    def invalidate_view(self) -> None:
+        """Reset directional evidence after a successful head rotation."""
+        for name in self.sectors:
+            self.sectors[name] = SectorEvidence()
+
     def update(
         self,
         frame: PerceptionFrame,

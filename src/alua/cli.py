@@ -9,7 +9,7 @@ import sys
 from .bridge_client import BridgeClient
 from .config import Config
 from .errors import AluaError
-from .evaluation import evaluate_trace
+from .evaluation import acceptance_report, evaluate_sensory_replay, evaluate_trace
 from .runtime import Runtime
 from .store import Store
 
@@ -23,6 +23,8 @@ def _parser() -> argparse.ArgumentParser:
     commands.add_parser("status", help="Vypíše lokální stav kognitivní persistence")
     evaluate = commands.add_parser("evaluate", help="Vyhodnotí chování v aktuální World session")
     evaluate.add_argument("--limit", type=int, default=500, help="Maximální počet posledních rozhodnutí")
+    benchmark = commands.add_parser("benchmark", help="Provede offline behaviorální a sensory acceptance test")
+    benchmark.add_argument("--limit", type=int, default=2000, help="Maximální počet posledních rozhodnutí a vjemů")
     run = commands.add_parser("run", help="Spustí kognitivní runtime")
     run.add_argument("--once", action="store_true", help="Provede právě jeden cyklus")
     return parser
@@ -52,6 +54,32 @@ def main(argv: list[str] | None = None) -> int:
                 }
                 print(json.dumps(result, ensure_ascii=False, indent=2))
                 return 0
+
+            if args.command == "benchmark":
+                state = store.state(config.agent_id)
+                session_id = state.get("session_id")
+                trace = store.session_trace(
+                    config.agent_id,
+                    session_id,
+                    limit=args.limit,
+                )
+                episodes = store.session_episodes(
+                    config.agent_id,
+                    session_id,
+                    limit=args.limit,
+                )
+                behavior = evaluate_trace(trace)
+                sensory = evaluate_sensory_replay(episodes)
+                acceptance = acceptance_report(behavior, sensory)
+                result = {
+                    "agent_id": config.agent_id,
+                    "session_id": session_id,
+                    "behavior": behavior,
+                    "sensory_replay": sensory,
+                    "acceptance": acceptance,
+                }
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+                return 0 if acceptance["passed"] else 3
 
             bridge = BridgeClient(config)
             if args.command == "doctor":

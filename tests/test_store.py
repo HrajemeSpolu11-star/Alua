@@ -284,6 +284,71 @@ class StoreTests(unittest.TestCase):
             finally:
                 store.close()
 
+    def test_belief_evidence_is_persisted_with_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            try:
+                store.update_binary_belief(
+                    agent_id="alua:1",
+                    belief_key="appearance:p1:touch:effect",
+                    kind="empirical",
+                    subject_signature="p1",
+                    relation="touch_effect",
+                    value={"expected": True},
+                    supported=True,
+                    sequence=8,
+                    evidence_session_id="s1",
+                    evidence_decision_id="mind-8",
+                )
+                evidence = store.belief_evidence(
+                    "alua:1",
+                    "appearance:p1:touch:effect",
+                )
+                self.assertEqual(len(evidence), 1)
+                self.assertEqual(evidence[0]["session_id"], "s1")
+                self.assertEqual(evidence[0]["observation_sequence"], 8)
+                self.assertEqual(evidence[0]["decision_id"], "mind-8")
+                self.assertTrue(evidence[0]["supported"])
+                self.assertEqual(store.summary("alua:1")["belief_evidence"], 1)
+            finally:
+                store.close()
+
+    def test_perceptual_place_and_transition_evidence_accumulate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            try:
+                store.record_perceptual_place("alua:1", "place-a", 1)
+                store.record_perceptual_place("alua:1", "place-a", 2)
+                store.update_perceptual_transition(
+                    agent_id="alua:1",
+                    from_signature="place-a",
+                    maneuver="left",
+                    to_signature="place-b",
+                    supported=False,
+                    sequence=3,
+                )
+                store.update_perceptual_transition(
+                    agent_id="alua:1",
+                    from_signature="place-a",
+                    maneuver="left",
+                    to_signature="place-b",
+                    supported=True,
+                    sequence=4,
+                )
+                stats = store.perceptual_transition_stats(
+                    "alua:1",
+                    "place-a",
+                    "left",
+                )
+                self.assertIsNotNone(stats)
+                self.assertEqual(stats["successes"], 1)
+                self.assertEqual(stats["failures"], 1)
+                summary = store.summary("alua:1")
+                self.assertEqual(summary["perceptual_places"], 1)
+                self.assertEqual(summary["perceptual_transitions"], 1)
+            finally:
+                store.close()
+
     def test_v1_database_is_backed_up_and_migrated(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "legacy.sqlite3"
@@ -319,7 +384,7 @@ class StoreTests(unittest.TestCase):
                 store.close()
 
 
-    def test_goal_outcomes_and_schema_v3_tables(self) -> None:
+    def test_goal_outcomes_and_current_schema_tables(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = Store(Path(tmp) / "alua.sqlite3")
             try:
@@ -341,12 +406,60 @@ class StoreTests(unittest.TestCase):
                     sequence=2,
                 )
                 self.assertEqual(completed["failures"], 1)
-                self.assertEqual(store.summary("alua:1")["schema_version"], 3)
+                self.assertEqual(store.summary("alua:1")["schema_version"], SCHEMA_VERSION)
                 self.assertEqual(store.summary("alua:1")["goals"], 1)
             finally:
                 store.close()
 
-    def test_v2_database_is_backed_up_and_migrated_to_v3(self) -> None:
+    def test_v3_database_is_backed_up_and_preserves_beliefs_on_v4_migration(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy-v3.sqlite3"
+            db = sqlite3.connect(path)
+            db.executescript(
+                """
+                CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+                INSERT INTO meta(key,value) VALUES('schema_version','3');
+                CREATE TABLE beliefs(
+                    agent_id TEXT NOT NULL,
+                    belief_key TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    subject_signature TEXT,
+                    relation TEXT NOT NULL,
+                    value_json TEXT NOT NULL,
+                    confidence REAL NOT NULL,
+                    support_count INTEGER NOT NULL,
+                    contradiction_count INTEGER NOT NULL,
+                    last_sequence INTEGER NOT NULL,
+                    created_at REAL NOT NULL,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY(agent_id, belief_key)
+                );
+                INSERT INTO beliefs(
+                    agent_id,belief_key,kind,subject_signature,relation,value_json,
+                    confidence,support_count,contradiction_count,last_sequence,created_at,updated_at
+                ) VALUES(
+                    'alua:1','legacy-belief','empirical','p-old','touch_effect',
+                    '{"expected":true}',0.75,2,0,42,1.0,1.0
+                );
+                """
+            )
+            db.commit()
+            db.close()
+
+            store = Store(path)
+            try:
+                self.assertIsNotNone(store.last_backup_path)
+                self.assertTrue(store.last_backup_path.exists())
+                self.assertEqual(store.summary("alua:1")["schema_version"], SCHEMA_VERSION)
+                belief = store.belief("alua:1", "legacy-belief")
+                self.assertIsNotNone(belief)
+                self.assertEqual(belief["support_count"], 2)
+                self.assertEqual(store.summary("alua:1")["perceptual_places"], 0)
+                self.assertEqual(store.summary("alua:1")["belief_evidence"], 0)
+            finally:
+                store.close()
+
+    def test_v2_database_is_backed_up_and_migrated_to_current_schema(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "legacy-v2.sqlite3"
             db = sqlite3.connect(path)
@@ -378,7 +491,7 @@ class StoreTests(unittest.TestCase):
                 self.assertIsNotNone(store.last_backup_path)
                 self.assertTrue(store.last_backup_path.exists())
                 summary = store.summary("alua:1")
-                self.assertEqual(summary["schema_version"], 3)
+                self.assertEqual(summary["schema_version"], SCHEMA_VERSION)
                 self.assertIn("skills", summary)
                 self.assertIn("goals", summary)
             finally:

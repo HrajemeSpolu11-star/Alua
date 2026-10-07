@@ -75,12 +75,15 @@ Hotovo navíc:
 - hierarchical data-only skill graph;
 - receding-horizon local navigation;
 - uncertainty-driven information scan;
-- trajectory evaluation.
+- trajectory evaluation;
+- adaptive utility ranking;
+- persistentní perceptuální topologie;
+- belief evidence provenance;
+- offline sensory replay + acceptance benchmark.
 
 Zbývá:
 - fyzické needs z metabolismu;
-- explicitní utility/risk learning;
-- dlouhodobá topologická paměť pouze z vlastních vjemů;
+- explicitní harm/risk model pro jednotlivé manipulace;
 - explicitní preconditions pro naučené composite skills;
 - potom autonomní pickup/push/break.
 

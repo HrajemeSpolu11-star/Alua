@@ -34,6 +34,8 @@ def learn_from_motor_outcome(
         value={"expected": True},
         supported=succeeded,
         sequence=observation_sequence,
+        evidence_session_id=expectation.get("session_id"),
+        evidence_decision_id=expectation.get("decision_id"),
     )
 
     target_signature = expectation.get("target_signature")
@@ -50,4 +52,6 @@ def learn_from_motor_outcome(
                 value={"expected": True},
                 supported=succeeded,
                 sequence=observation_sequence,
+                evidence_session_id=expectation.get("session_id"),
+                evidence_decision_id=expectation.get("decision_id"),
             )

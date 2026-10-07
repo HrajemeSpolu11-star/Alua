@@ -130,3 +130,25 @@ Nové unit testy pokrývají:
 - uncertainty-driven scan;
 - decision/outcome trajectory join;
 - evaluator quality flags.
+
+## Adaptive V3 persistence a replay
+
+Unit testy navíc ověřují:
+- belief provenance;
+- perceptual place persistence;
+- transition success/failure evidence;
+- persistent navigation penalty;
+- utility rozdíl mezi opakovaně úspěšným a neúspěšným golem;
+- damage vliv na intrinsic utility;
+- invalidaci egocentrického view po look;
+- sensory replay.
+
+Po live testu použít:
+
+```bash
+.venv/bin/python -m alua benchmark --limit 2000
+```
+
+Exit code `0` znamená, že aktuální uložená session prošla acceptance checks. Nenulový exit code znamená behaviorální regresi nebo nedostatek evidence; JSON výstup přesně ukáže neúspěšné checks.
+
+Migrace schema v3 -> v4 musí zachovat staré episodes/beliefs/skills a vytvořit pre-v4 backup.

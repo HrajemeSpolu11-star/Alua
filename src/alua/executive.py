@@ -31,6 +31,7 @@ class ExecutiveController:
         self.planner = planner or BoundedPlanner()
         self.active_plan: BehaviorPlan | None = None
         self.step_index = 0
+        self._navigation_priors: dict[str, float] = {}
 
     def reset_session(self) -> None:
         self.world_model.reset()
@@ -38,6 +39,16 @@ class ExecutiveController:
         self.critic.reset()
         self.active_plan = None
         self.step_index = 0
+        self._navigation_priors = {}
+
+    def set_navigation_priors(self, penalties: dict[str, float] | None) -> None:
+        self._navigation_priors = {
+            key: max(0.0, float(value))
+            for key, value in (penalties or {}).items()
+            if key in {"forward", "left", "right", "back"}
+            and isinstance(value, (int, float))
+            and not isinstance(value, bool)
+        }
 
     def observe(
         self,
@@ -99,7 +110,10 @@ class ExecutiveController:
             return True
         if self.world_model.front_is_blocked():
             return False
-        return self.navigator.prefers_forward(self.world_model)
+        return self.navigator.prefers_forward(
+            self.world_model,
+            persistent_penalties=self._navigation_priors,
+        )
 
     def choose(
         self,
@@ -120,7 +134,11 @@ class ExecutiveController:
                 mode = "escape"
             else:
                 mode = "frontier"
-            choice = self.navigator.choose(self.world_model, mode=mode)
+            choice = self.navigator.choose(
+                self.world_model,
+                mode=mode,
+                persistent_penalties=self._navigation_priors,
+            )
             intent = ActionIntent(
                 action_type="move",
                 parameters={
@@ -189,11 +207,14 @@ class ExecutiveController:
         self,
         expectation: dict[str, Any],
         supported: bool,
+        frame: PerceptionFrame | None = None,
     ) -> None:
         action = expectation.get("action")
         if isinstance(action, dict):
             self.navigator.observe_outcome(action, supported)
             self.critic.record_outcome(action, supported)
+            if supported and action.get("type") == "look":
+                self.world_model.invalidate_view()
 
         plan = self.active_plan
         if plan is None:

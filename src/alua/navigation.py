@@ -115,6 +115,7 @@ class LocalNavigator:
         model: EgocentricWorldModel,
         *,
         mode: str = "frontier",
+        persistent_penalties: dict[str, float] | None = None,
     ) -> NavigationChoice:
         if mode not in {"frontier", "lateral", "escape"}:
             raise ValueError("unknown navigation mode")
@@ -130,8 +131,10 @@ class LocalNavigator:
         if model.front_is_blocked():
             sector_scores["forward"] -= 0.80
 
+        priors = persistent_penalties or {}
         scores = {
             maneuver: self._score(maneuver, base, mode=mode)
+            - max(0.0, float(priors.get(maneuver, 0.0)))
             for maneuver, base in sector_scores.items()
         }
         order = ("forward", "left", "right", "back")
@@ -168,8 +171,21 @@ class LocalNavigator:
                     key: round(value, 4)
                     for key, value in self._failure_penalty.items()
                 },
+                "persistent_penalty": {
+                    key: round(max(0.0, float(priors.get(key, 0.0))), 4)
+                    for key in ("forward", "left", "right", "back")
+                },
             },
         )
 
-    def prefers_forward(self, model: EgocentricWorldModel) -> bool:
-        return self.choose(model, mode="frontier").maneuver == "forward"
+    def prefers_forward(
+        self,
+        model: EgocentricWorldModel,
+        *,
+        persistent_penalties: dict[str, float] | None = None,
+    ) -> bool:
+        return self.choose(
+            model,
+            mode="frontier",
+            persistent_penalties=persistent_penalties,
+        ).maneuver == "forward"

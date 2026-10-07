@@ -152,3 +152,34 @@ Výsledek criticu je replan signál, nikoli belief.
 LocalNavigator udržuje session-local failure penalty pro konkrétní manévry. Neúspěšný fyzický outcome zvýší cenu stejného manévru; úspěch ji sníží. Po každém novém vjemu se směry znovu ohodnotí.
 
 Dlouhodobé empirické skills zůstávají v SQLite a používají se pouze pokud neodporují aktuálnímu smyslovému kontextu.
+
+## Adaptive utility V3
+
+Intrinsic kandidáti jsou po vytvoření hodnoceni `AdaptiveUtilityModel`.
+
+Skóre obsahuje pouze epistemicky dovolené veličiny:
+- base priority;
+- Beta-smoothed empirical success/failure;
+- current information need;
+- novelty;
+- recent bodily damage;
+- malý prior náklad akce.
+
+Reflex survival zůstává mimo tuto soutěž a preemptuje intrinsic cíle.
+
+## Persistentní transition learning
+
+Po move se uloží pouze:
+
+```text
+vjemový kontext před akcí
++ typ manévru
++ vjemový kontext po akci
++ sensory outcome success/failure
+```
+
+LocalNavigator z této zkušenosti odvozuje persistentní penalty. Agent se tak může po restartu vyhnout manévru, který ve stejném perceptuálním kontextu opakovaně selhával, aniž by znal mapu nebo materiál.
+
+## Belief evidence
+
+Každý motoricky naučený belief může být zpětně spojen s observation sequence a decision ID, které jej podpořily nebo vyvrátily. Confidence zůstává Beta-smoothed a další zkušenost jej může změnit.

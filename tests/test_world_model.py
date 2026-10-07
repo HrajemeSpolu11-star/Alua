@@ -49,6 +49,15 @@ class WorldModelTests(unittest.TestCase):
         self.assertNotIn("position", summary)
         self.assertGreater(summary["scores"]["left"], summary["scores"]["right"])
 
+    def test_view_invalidation_prevents_mixing_rotated_egocentric_sectors(self) -> None:
+        model = EgocentricWorldModel()
+        model.update(frame(), {"p-left-new"})
+        self.assertGreater(model.sectors["left"].confidence, 0)
+        model.invalidate_view()
+        for evidence in model.sectors.values():
+            self.assertEqual(evidence.samples, 0)
+            self.assertEqual(evidence.confidence, 0.0)
+
     def test_reset_removes_session_local_evidence(self) -> None:
         model = EgocentricWorldModel()
         model.update(frame(), {"p-left-new"})

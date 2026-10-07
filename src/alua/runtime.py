@@ -18,6 +18,8 @@ from .perception import PerceptionFrame, build_frame
 from .policy import ExplorationPolicy
 from .skills import SkillLibrary
 from .store import Store
+from .topology import PerceptualTopology
+from .utility import AdaptiveUtilityModel
 
 
 LOG = logging.getLogger("alua.runtime")
@@ -47,6 +49,8 @@ class Runtime:
         reflex: ReflexGoalSelector | None = None,
         skills: SkillLibrary | None = None,
         executive: ExecutiveController | None = None,
+        topology: PerceptualTopology | None = None,
+        utility: AdaptiveUtilityModel | None = None,
     ):
         self.config = config
         self.store = store
@@ -57,6 +61,8 @@ class Runtime:
         self.reflex = reflex or ReflexGoalSelector()
         self.skills = skills or SkillLibrary()
         self.executive = executive or ExecutiveController(fallback_policy=self.policy)
+        self.topology = topology or PerceptualTopology()
+        self.utility = utility or AdaptiveUtilityModel()
         self.store.ensure_agent(config.agent_id)
         deactivated = self.skills.reconcile(self.store, config.agent_id)
         if deactivated:
@@ -91,7 +97,16 @@ class Runtime:
                 continue
 
             succeeded = motor_success(event)
-            self.executive.on_outcome(expectation, succeeded)
+            action = expectation.get("action")
+            if isinstance(action, dict):
+                self.topology.finish_action(
+                    self.store,
+                    self.config.agent_id,
+                    action,
+                    succeeded,
+                    frame,
+                )
+            self.executive.on_outcome(expectation, succeeded, frame)
             learn_from_motor_outcome(
                 self.store,
                 self.config.agent_id,
@@ -136,6 +151,17 @@ class Runtime:
             session_id,
         )
         previous_goal_kind = previous.get("goal_kind") if previous else None
+        information_need = self.executive.world_model.horizontal_uncertainty()
+
+        def rank(candidate: GoalCandidate) -> float:
+            stats = self.store.goal_stats(self.config.agent_id, candidate.key)
+            return self.utility.evaluate(
+                candidate,
+                stats=stats,
+                memory=self.memory,
+                information_need=information_need,
+            ).total
+
         return (
             self.curriculum.choose(
                 frame,
@@ -145,7 +171,8 @@ class Runtime:
                 previous_goal_kind=previous_goal_kind
                 if isinstance(previous_goal_kind, str)
                 else None,
-                information_need=self.executive.world_model.horizontal_uncertainty(),
+                information_need=information_need,
+                candidate_ranker=rank,
             ),
             False,
         )
@@ -157,6 +184,7 @@ class Runtime:
         if changed:
             self.memory.clear()
             self.executive.reset_session()
+            self.topology.reset_session()
 
         state = self.store.state(self.config.agent_id)
         cursor = int(state["last_observation_sequence"])
@@ -180,6 +208,13 @@ class Runtime:
                 processed += 1
                 self.memory.add(frame)
                 self.executive.observe(frame, current_novel)
+                self.topology.observe(self.store, self.config.agent_id, frame)
+                self.executive.set_navigation_priors(
+                    self.topology.persistent_penalties(
+                        self.store,
+                        self.config.agent_id,
+                    )
+                )
                 latest = frame
                 latest_novel = current_novel
                 cursor = frame.sequence
@@ -279,6 +314,7 @@ class Runtime:
             response["action_sequence"],
         )
         self.executive.on_submitted(intent, goal, latest.sequence)
+        self.topology.begin_action(action)
         self.store.record_goal_attempt(
             agent_id=self.config.agent_id,
             goal_key=goal.key,
