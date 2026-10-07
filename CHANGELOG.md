@@ -1,5 +1,20 @@
 # Přehled změn
 
+## 2026-10-07 – audit mozku a odstranění look loopu
+
+- nalezena hlavní příčina dlouhých sérií `look`: `scan_recovery` mohl po historických exploration failures trvale přebíjet další pohyb;
+- `scan_recovery` i `scan_obstacle` nyní vyžadují intervenující exploration pokus před dalším scanem;
+- staré failures už nevynucují recovery, pokud successes znovu převažují;
+- scan direction už není odvozena z parity observation sequence a nevytváří jednoduchý levá/pravá oscilátor;
+- zrakový percept přežije expiraci `target_ref`; handle je nyní volitelný motorický capability, nikoli podmínka existence perceptu;
+- scan akce se již neučí jako reusable skills;
+- reusable touch skill neukládá konkrétní ruku a při použití znovu vybere aktuálně dostupný effector;
+- generic explore skill nesmí přebít aktuální blízkou překážku;
+- kontextový obstacle-bypass se nepromuje na univerzální explore skill;
+- opravena chyba řazení distance `0.0`;
+- přidány regresní testy a `docs/AUDIT_BRAIN_2026-10-07.md`.
+
+
 ## 2026-10-07 – Alua přežije expirovaný target_ref
 
 - `409 target_expired` už neukončí celý kognitivní runtime;

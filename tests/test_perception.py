@@ -49,6 +49,29 @@ class PerceptionTests(unittest.TestCase):
         self.assertEqual(frame.targets[0].distance_fraction, 0.2)
         self.assertNotIn("t3_9", json.dumps(frame.persistent))
 
+    def test_visual_percept_survives_without_target_ref(self) -> None:
+        frame = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 5,
+            "simulation_time": 2.5,
+            "channels": {
+                "vision": {
+                    "rays": [{
+                        "appearance_id": "p-expired",
+                        "distance_fraction": 0.06,
+                        "blocks_motion": True,
+                        "liquid": False,
+                    }]
+                }
+            },
+        })
+        self.assertEqual(frame.target_refs, ())
+        self.assertEqual(len(frame.targets), 1)
+        self.assertIsNone(frame.targets[0].target_ref)
+        self.assertEqual(frame.targets[0].appearance_id, "p-expired")
+        self.assertTrue(frame.targets[0].blocks_motion)
+
     def test_motor_feedback_is_extracted(self) -> None:
         frame = build_frame({
             "schema_version": 1,

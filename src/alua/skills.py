@@ -5,11 +5,13 @@ import json
 from typing import Any
 
 from .goals import GoalCandidate
-from .policy import ActionIntent
+from .perception import PerceptionFrame
+from .policy import ActionIntent, available_effector, near_central_obstacle
 from .store import Store, canonical_json, strip_ephemeral
 
 
-SAFE_SKILL_ACTIONS = {"move", "look", "manipulate"}
+SAFE_SKILL_ACTIONS = {"move", "manipulate"}
+LEARNABLE_GOAL_KINDS = {"explore", "inspect_object"}
 
 
 def _safe_step_from_action(action: dict[str, Any]) -> dict[str, Any] | None:
@@ -19,9 +21,15 @@ def _safe_step_from_action(action: dict[str, Any]) -> dict[str, Any] | None:
         return None
     if action_type == "manipulate" and parameters.get("verb") != "touch":
         return None
+    safe_parameters = strip_ephemeral(parameters)
+    if not isinstance(safe_parameters, dict):
+        return None
+    if action_type == "manipulate":
+        # Konkrétní ruka je kontext těla, ne přenositelná část dovednosti.
+        safe_parameters.pop("effector", None)
     step: dict[str, Any] = {
         "type": action_type,
-        "parameters": strip_ephemeral(parameters),
+        "parameters": safe_parameters,
     }
     duration = action.get("duration")
     if isinstance(duration, (int, float)) and not isinstance(duration, bool):
@@ -39,6 +47,13 @@ class SkillLibrary:
     min_successes = 3
     min_confidence = 0.70
 
+    def reconcile(self, store: Store, agent_id: str) -> int:
+        """Deactivate legacy reusable skills that current policy no longer permits."""
+        return store.deactivate_reusable_skills_outside(
+            agent_id,
+            frozenset(LEARNABLE_GOAL_KINDS),
+        )
+
     @staticmethod
     def skill_key(goal_kind: str, target_signature: str | None, step: dict[str, Any]) -> str:
         payload = canonical_json({
@@ -53,8 +68,12 @@ class SkillLibrary:
         store: Store,
         agent_id: str,
         goal: GoalCandidate,
+        frame: PerceptionFrame | None = None,
     ) -> tuple[str, ActionIntent] | None:
-        if goal.kind.startswith("survive_"):
+        if goal.kind.startswith("survive_") or goal.kind not in LEARNABLE_GOAL_KINDS:
+            return None
+        if goal.kind == "explore" and frame is not None and near_central_obstacle(frame):
+            # Kontextově slepý forward skill nesmí přebít aktuální obstacle bypass.
             return None
         record = store.best_reusable_skill(
             agent_id=agent_id,
@@ -71,14 +90,20 @@ class SkillLibrary:
         parameters = step.get("parameters")
         if action_type not in SAFE_SKILL_ACTIONS or not isinstance(parameters, dict):
             return None
+        rebound_parameters = dict(parameters)
         if action_type == "manipulate":
-            if parameters.get("verb") != "touch" or not goal.target_ref:
+            if rebound_parameters.get("verb") != "touch" or not goal.target_ref:
                 return None
+            rebound_parameters.pop("effector", None)
+            if frame is not None:
+                effector = available_effector(frame, "touch")
+                if effector is not None:
+                    rebound_parameters["effector"] = effector
         return (
             record["skill_key"],
             ActionIntent(
                 action_type=action_type,
-                parameters=dict(parameters),
+                parameters=rebound_parameters,
                 duration=step.get("duration") if isinstance(step.get("duration"), (int, float)) else None,
                 target_ref=goal.target_ref if action_type == "manipulate" else None,
                 target_signature=goal.target_signature,
@@ -104,7 +129,12 @@ class SkillLibrary:
         sequence: int,
     ) -> dict[str, Any] | None:
         goal_kind = expectation.get("goal_kind")
-        if not isinstance(goal_kind, str) or not goal_kind or goal_kind.startswith("survive_"):
+        if (
+            not isinstance(goal_kind, str)
+            or not goal_kind
+            or goal_kind.startswith("survive_")
+            or goal_kind not in LEARNABLE_GOAL_KINDS
+        ):
             return None
         action = expectation.get("action")
         if not isinstance(action, dict):
@@ -112,6 +142,22 @@ class SkillLibrary:
         step = _safe_step_from_action(action)
         if step is None:
             return None
+        if goal_kind == "explore":
+            parameters = step.get("parameters", {})
+            forward = parameters.get("forward")
+            strafe = parameters.get("strafe")
+            if (
+                not isinstance(forward, (int, float))
+                or isinstance(forward, bool)
+                or not isinstance(strafe, (int, float))
+                or isinstance(strafe, bool)
+                or float(forward) < 0.5
+                or abs(float(strafe)) > 0.05
+            ):
+                # Obstacle-bypass je kontextová motorická reakce, ne univerzální
+                # explore skill. Bez precondition modelu by se mohl přenést do
+                # otevřeného prostoru a vytvořit nový stereotyp.
+                return None
         target_signature = expectation.get("target_signature")
         if not isinstance(target_signature, str):
             target_signature = None

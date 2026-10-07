@@ -1,5 +1,16 @@
 # Implementační deník Alua AI
 
+## 2026-10-07 – audit mozku po prvním E2E běhu
+
+Živý World log po úspěšném propojení odhalil dlouhou sérii `look`. Audit ukázal, že nešlo o naučenou strategii, ale o starvation chybu intrinsic curriculum: po dostatečném počtu exploration failures mohl `scan_recovery` s prioritou kolem 0.84 trvale vítězit nad exploration kolem 0.50. Stejný vzor mohl vzniknout i u centrální překážky.
+
+Oba scan cíle jsou nyní edge-triggered vůči novějšímu exploration pokusu, historické failures samy o sobě recovery neudržují a následný pohyb u centrální překážky používá opatrný boční bypass. Scan direction už není parity-based.
+
+Audit současně opravil perception/skill chyby: ray bez čerstvého `target_ref` zůstává vizuálním perceptem, scan akce se nepromují do procedural memory, touch skill znovu váže aktuálně volnou ruku a generic explore skill se proti aktuální překážce nepoužije.
+
+Detail: `docs/AUDIT_BRAIN_2026-10-07.md`.
+
+
 ## 2026-10-07 – první skutečně uzavřený embodied loop
 
 Mobilní běh potvrdil celý řetězec od observation až po fyzický outcome a learning. Po opravě World body adapteru začal `last_observation_sequence` růst ze 0 na stovky frame. Druhý runtime blocker byl `409 target_expired`: krátkodobý opaque handle mohl korektně vypršet, ale Alua tento stav považovala za fatální.

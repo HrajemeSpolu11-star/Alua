@@ -827,6 +827,23 @@ class Store:
         result["reusable"] = bool(result["reusable"])
         return result
 
+    def deactivate_reusable_skills_outside(
+        self,
+        agent_id: str,
+        allowed_goal_kinds: set[str] | frozenset[str],
+    ) -> int:
+        allowed = sorted({kind for kind in allowed_goal_kinds if isinstance(kind, str) and kind})
+        if not allowed:
+            return 0
+        placeholders = ",".join("?" for _ in allowed)
+        with self._transaction() as db:
+            cursor = db.execute(
+                f"UPDATE skills SET reusable=0,updated_at=? "
+                f"WHERE agent_id=? AND reusable=1 AND goal_kind NOT IN ({placeholders})",
+                (time.time(), agent_id, *allowed),
+            )
+            return max(0, int(cursor.rowcount))
+
     def summary(self, agent_id: str) -> dict[str, Any]:
         state = self.state(agent_id)
         with self._lock:

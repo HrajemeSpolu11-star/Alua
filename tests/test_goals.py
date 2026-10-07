@@ -81,6 +81,144 @@ class GoalTests(unittest.TestCase):
         )
         self.assertNotEqual(finished.kind, "inspect_object")
 
+    def test_obstacle_scan_requires_intervening_exploration(self) -> None:
+        current = make_frame(11, distance=0.10, appearance="p-wall")
+        memory = WorkingMemory()
+        memory.add(current)
+
+        initial = IntrinsicCurriculum().choose(
+            current,
+            set(),
+            memory,
+            lambda _: None,
+        )
+        self.assertEqual(initial.kind, "scan_obstacle")
+
+        def after_scan(key: str):
+            if key == "scan:obstacle":
+                return {"attempts": 1, "successes": 1, "failures": 0, "last_sequence": 11}
+            return None
+
+        followup = IntrinsicCurriculum().choose(
+            make_frame(12, distance=0.10, appearance="p-wall"),
+            set(),
+            memory,
+            after_scan,
+        )
+        self.assertEqual(followup.kind, "explore")
+
+        def after_move(key: str):
+            if key == "scan:obstacle":
+                return {"attempts": 1, "successes": 1, "failures": 0, "last_sequence": 11}
+            if key == "explore:open":
+                return {"attempts": 1, "successes": 0, "failures": 1, "last_sequence": 13}
+            return None
+
+        rescan = IntrinsicCurriculum().choose(
+            make_frame(14, distance=0.10, appearance="p-wall"),
+            set(),
+            memory,
+            after_move,
+        )
+        self.assertEqual(rescan.kind, "scan_obstacle")
+
+    def test_recovery_scan_does_not_starve_followup_exploration(self) -> None:
+        current = make_frame(21)
+        memory = WorkingMemory()
+        memory.add(current)
+
+        def failed_explore(key: str):
+            if key == "explore:open":
+                return {
+                    "attempts": 4,
+                    "successes": 1,
+                    "failures": 3,
+                    "last_sequence": 20,
+                }
+            return None
+
+        recovery = IntrinsicCurriculum().choose(current, set(), memory, failed_explore)
+        self.assertEqual(recovery.kind, "scan_recovery")
+
+        def after_recovery(key: str):
+            if key == "explore:open":
+                return {
+                    "attempts": 4,
+                    "successes": 1,
+                    "failures": 3,
+                    "last_sequence": 20,
+                }
+            if key == "scan:recovery":
+                return {
+                    "attempts": 1,
+                    "successes": 1,
+                    "failures": 0,
+                    "last_sequence": 21,
+                }
+            return None
+
+        next_goal = IntrinsicCurriculum().choose(
+            make_frame(22),
+            set(),
+            memory,
+            after_recovery,
+        )
+        self.assertEqual(next_goal.kind, "explore")
+
+    def test_zero_distance_is_really_nearest(self) -> None:
+        frame = build_frame({
+            "schema_version": 1,
+            "agent_id": "alua:1",
+            "sequence": 30,
+            "simulation_time": 30.0,
+            "channels": {
+                "vision": {
+                    "rays": [
+                        {
+                            "distance_fraction": 0.0,
+                            "appearance_id": "p-touching",
+                            "blocks_motion": True,
+                            "target_ref": "t30_1",
+                        },
+                        {
+                            "distance_fraction": 0.04,
+                            "appearance_id": "p-near",
+                            "blocks_motion": True,
+                            "target_ref": "t30_2",
+                        },
+                    ]
+                },
+                "contact": {"damage_signal": 0},
+            },
+        })
+        memory = WorkingMemory()
+        memory.add(frame)
+        goal = IntrinsicCurriculum().choose(
+            frame,
+            {"p-touching", "p-near"},
+            memory,
+            lambda _: None,
+        )
+        self.assertEqual(goal.target_signature, "p-touching")
+
+    def test_old_failures_do_not_force_recovery_after_successes_dominate(self) -> None:
+        frame = make_frame(41)
+        memory = WorkingMemory()
+        memory.add(frame)
+
+        def stats(key: str):
+            if key == "explore:open":
+                return {
+                    "attempts": 8,
+                    "successes": 5,
+                    "failures": 3,
+                    "last_sequence": 40,
+                }
+            return None
+
+        goal = IntrinsicCurriculum().choose(frame, set(), memory, stats)
+        self.assertEqual(goal.kind, "explore")
+
     def test_repeated_failed_exploration_promotes_recovery_scan(self) -> None:
         frame = make_frame(3)
         memory = WorkingMemory()

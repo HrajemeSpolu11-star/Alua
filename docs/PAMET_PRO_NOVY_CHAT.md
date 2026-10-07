@@ -6,6 +6,20 @@ Aktualizováno: 2026-10-07.
 
 Alua je samostatný mozek autonomního agenta pro AluaWorld.
 
+## Audit chování po prvním E2E běhu – 2026-10-07
+
+Dlouhá série `look` v živém logu byla potvrzena jako chyba rozhodovací vrstvy, nikoli jako smysluplná emergentní strategie. `scan_recovery` a `scan_obstacle` mohly trvale vyhladovět exploration. Oprava vyžaduje mezi dvěma scany skutečný exploration pokus a recovery se už neopírá pouze o historické failures.
+
+Současně:
+- vizuální percept přežije expiraci `target_ref`;
+- scan actions nejsou reusable skills;
+- touch skill nepersistuje konkrétní ruku;
+- reusable explore skill neobchází aktuální obstacle check;
+- context-specific strafe se nezobecňuje bez precondition modelu;
+- distance 0.0 je korektně nejbližší.
+
+Autoritativní audit: `docs/AUDIT_BRAIN_2026-10-07.md`.
+
 ## Nejnovější ověřený stav
 
 2026-10-07 proběhl první skutečně úspěšný mobilní E2E běh všech tří repozitářů. `alua:1` přijímala observations, autonomně vykonávala fyzické akce a z budoucích motorických vjemů vznikaly beliefs a skills.
