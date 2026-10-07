@@ -1,5 +1,15 @@
 # Přehled změn
 
+## 2026-10-07 – globální scan gate po terénním retestu
+
+- reálný retest ukázal, že různé scan cíle mohly stále řetězit `look` za sebou, i když každý jednotlivý scan typ měl vlastní anti-loop bránu;
+- `scan_obstacle`, `scan_recovery` a `scan_periodic` nyní sdílejí jednu globální scan gate;
+- po libovolném scanu musí následovat jiný přijatý goal/action, než lze znovu zvolit další scan;
+- anti-loop stav se odvozuje z posledního Bridge přijatého rozhodnutí v aktuální `session_id`;
+- odstraněno porovnávání `goal_stats.last_sequence` mezi sessions, protože observation sequence se při nové World session resetuje;
+- přidány regresní testy pro chaining různých scan kindů a izolaci historie podle session.
+
+
 ## 2026-10-07 – audit mozku a odstranění look loopu
 
 - nalezena hlavní příčina dlouhých sérií `look`: `scan_recovery` mohl po historických exploration failures trvale přebíjet další pohyb;
