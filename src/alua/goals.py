@@ -141,33 +141,56 @@ class IntrinsicCurriculum:
                 and target.distance_fraction is not None
             ]
             liquid_targets.sort(key=lambda target: (target.distance_fraction, target.ray_index))
-            target = next(
-                (
-                    item for item in liquid_targets
-                    if item.distance_fraction is not None
-                    and item.distance_fraction <= 0.11
-                    and (
-                        not item.appearance_id
-                        or not belief_lookup
-                        or belief_supports(
-                            f"appearance:{item.appearance_id}:drink:hydration_effect"
-                        )
-                        or goal_stats(f"need:drink:{item.appearance_id}") is None
+            viable_liquid = None
+            for item in liquid_targets:
+                if item.appearance_id and belief_lookup is not None:
+                    hydration_belief = belief_lookup(
+                        f"appearance:{item.appearance_id}:drink:hydration_effect"
                     )
-                ),
-                None,
-            )
+                    if (
+                        hydration_belief
+                        and int(hydration_belief.get("contradiction_count", 0))
+                        > int(hydration_belief.get("support_count", 0))
+                    ):
+                        continue
+                attempts = (
+                    goal_stats(f"need:drink:{item.appearance_id}")
+                    if item.appearance_id
+                    else None
+                )
+                failures = int(attempts.get("failures", 0)) if attempts else 0
+                if failures < 2 or (
+                    item.appearance_id
+                    and belief_supports(
+                        f"appearance:{item.appearance_id}:drink:hydration_effect"
+                    )
+                ):
+                    viable_liquid = item
+                    break
+
+            phase = "search"
+            if viable_liquid is not None:
+                phase = (
+                    "drink"
+                    if viable_liquid.distance_fraction is not None
+                    and viable_liquid.distance_fraction <= 0.11
+                    else "approach"
+                )
             candidates.append(
                 GoalCandidate(
-                    key=f"need:drink:{target.appearance_id}" if target and target.appearance_id else "need:thirst:search",
+                    key=(
+                        f"need:drink:{viable_liquid.appearance_id}"
+                        if viable_liquid and viable_liquid.appearance_id
+                        else "need:thirst:search"
+                    ),
                     kind="satisfy_thirst",
                     priority=min(1.08, 0.68 + 0.40 * vitals.thirst),
-                    target_ref=target.target_ref if target else None,
-                    target_signature=target.appearance_id if target else None,
+                    target_ref=viable_liquid.target_ref if viable_liquid else None,
+                    target_signature=viable_liquid.appearance_id if viable_liquid else None,
                     reason={
                         "selector": "body_need",
                         "thirst_signal": vitals.thirst,
-                        "phase": "drink" if target else "search",
+                        "phase": phase,
                     },
                 )
             )
@@ -193,7 +216,6 @@ class IntrinsicCurriculum:
                     if target.target_ref
                     and target.appearance_id
                     and target.distance_fraction is not None
-                    and target.distance_fraction <= 0.11
                     and belief_supports(
                         f"appearance:{target.appearance_id}:consume:nutrition_effect"
                     )
@@ -217,9 +239,15 @@ class IntrinsicCurriculum:
                     )
                 )
             elif visible_known_food is not None:
+                distance = visible_known_food.distance_fraction or 1.0
                 pickup_stats = goal_stats(f"need:pickup:{visible_known_food.appearance_id}")
                 pickup_failures = int(pickup_stats.get("failures", 0)) if pickup_stats else 0
-                mine = pickup_failures >= 2
+                mine = distance <= 0.11 and pickup_failures >= 2
+                phase = (
+                    "approach"
+                    if distance > 0.11
+                    else ("mine_required" if mine else "pickup_required")
+                )
                 candidates.append(
                     GoalCandidate(
                         key=(
@@ -234,7 +262,7 @@ class IntrinsicCurriculum:
                         reason={
                             "selector": "body_need",
                             "hunger_signal": vitals.hunger,
-                            "phase": "mine_required" if mine else "pickup_required",
+                            "phase": phase,
                         },
                     )
                 )
