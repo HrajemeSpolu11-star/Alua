@@ -406,14 +406,14 @@ class GoalTests(unittest.TestCase):
         self.assertEqual(goal.reason["phase"], "consume_inventory")
         self.assertEqual(goal.reason["slot_index"], 4)
 
-    def test_collect_requires_prior_inspection(self) -> None:
+    def test_collect_follows_completed_inspection_phase(self) -> None:
         current = make_frame(53, distance=0.05, appearance="p-object", blocks_motion=False)
         memory = WorkingMemory()
         memory.add(current)
 
         def inspected_stats(key: str):
             if key == "inspect:p-object":
-                return {"attempts": 1, "successes": 1, "failures": 0}
+                return {"attempts": 3, "successes": 3, "failures": 0}
             return None
 
         goal = IntrinsicCurriculum().choose(
