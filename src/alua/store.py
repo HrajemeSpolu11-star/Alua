@@ -827,6 +827,59 @@ class Store:
         result["reusable"] = bool(result["reusable"])
         return result
 
+    def session_trace(
+        self,
+        agent_id: str,
+        session_id: str | None = None,
+        *,
+        limit: int = 500,
+    ) -> list[dict[str, Any]]:
+        """Return a bounded decision/outcome trace for offline behavior evaluation."""
+        limit = max(1, min(5000, int(limit)))
+        if session_id is None:
+            session_id = self.state(agent_id).get("session_id")
+        if not isinstance(session_id, str) or not session_id:
+            return []
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT d.decision_id,d.session_id,d.observation_sequence,d.action_type,"
+                "d.action_json,d.rationale_json,d.status,d.goal_key,d.goal_kind,d.skill_key,"
+                "d.bridge_action_sequence,e.state AS expectation_state,e.outcome_json "
+                "FROM decisions d LEFT JOIN expectations e ON e.decision_id=d.decision_id "
+                "WHERE d.agent_id=? AND d.session_id=? "
+                "ORDER BY d.observation_sequence DESC,d.created_at DESC LIMIT ?",
+                (agent_id, session_id, limit),
+            ).fetchall()
+        result: list[dict[str, Any]] = []
+        for row in reversed(rows):
+            item = dict(row)
+            try:
+                item["action"] = json.loads(item.pop("action_json"))
+            except (TypeError, json.JSONDecodeError):
+                item["action"] = {}
+            try:
+                item["rationale"] = json.loads(item.pop("rationale_json"))
+            except (TypeError, json.JSONDecodeError):
+                item["rationale"] = {}
+            outcome_raw = item.pop("outcome_json", None)
+            outcome = None
+            if isinstance(outcome_raw, str) and outcome_raw:
+                try:
+                    parsed = json.loads(outcome_raw)
+                    if isinstance(parsed, dict):
+                        outcome = parsed
+                except json.JSONDecodeError:
+                    outcome = None
+            item["outcome"] = outcome
+            signal = outcome.get("success_signal") if isinstance(outcome, dict) else None
+            item["outcome_success"] = (
+                bool(float(signal) >= 0.5)
+                if isinstance(signal, (int, float)) and not isinstance(signal, bool)
+                else None
+            )
+            result.append(item)
+        return result
+
     def latest_submitted_goal(
         self,
         agent_id: str,
