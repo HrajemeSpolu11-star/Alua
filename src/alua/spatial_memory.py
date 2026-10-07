@@ -58,6 +58,9 @@ class SpatialMemory:
     def __init__(self, route_capacity: int = 128) -> None:
         self.route_capacity = max(16, int(route_capacity))
         self.heading_rad = 0.0
+        self.pose_x = 0.0
+        self.pose_z = 0.0
+        self.pose_uncertainty = 0.05
         self.current_place: str | None = None
         self._route: list[RouteStep] = []
         self._failed_moves: dict[str, int] = {}
@@ -69,6 +72,9 @@ class SpatialMemory:
 
     def reset_session(self) -> None:
         self.heading_rad = 0.0
+        self.pose_x = 0.0
+        self.pose_z = 0.0
+        self.pose_uncertainty = 0.05
         self.current_place = None
         self._route.clear()
         self._failed_moves.clear()
@@ -96,6 +102,12 @@ class SpatialMemory:
             payload["visit_count"] = int(payload.get("visit_count", 0)) + 1
             payload["last_seen_sequence"] = frame.sequence
             payload["known_dead_end"] = bool(payload.get("known_dead_end", False))
+            payload["relative_pose"] = {
+                "x": round(self.pose_x, 4),
+                "z": round(self.pose_z, 4),
+                "heading_rad": round(self.heading_rad, 4),
+                "uncertainty": round(self.pose_uncertainty, 4),
+            }
             store.upsert_cognitive_record(
                 agent_id=agent_id,
                 record_key=f"place-state:{signature}",
@@ -140,6 +152,27 @@ class SpatialMemory:
                     0,
                     self._failed_moves.get(origin, 0) - 1,
                 )
+                forward = parameters.get("forward", 0.0)
+                strafe = parameters.get("strafe", 0.0)
+                forward = float(forward) if isinstance(forward, (int, float)) and not isinstance(forward, bool) else 0.0
+                strafe = float(strafe) if isinstance(strafe, (int, float)) and not isinstance(strafe, bool) else 0.0
+                norm = math.hypot(forward, strafe)
+                if norm > 1e-6:
+                    forward /= norm
+                    strafe /= norm
+                    # Internal coordinates are relative only: heading=0 means +Z,
+                    # positive strafe means body-right.
+                    right_x = math.cos(self._pending_heading)
+                    right_z = math.sin(self._pending_heading)
+                    forward_x = -math.sin(self._pending_heading)
+                    forward_z = math.cos(self._pending_heading)
+                    distance = max(0.05, min(1.5, float(quality)))
+                    self.pose_x += (forward * forward_x + strafe * right_x) * distance
+                    self.pose_z += (forward * forward_z + strafe * right_z) * distance
+                    self.pose_uncertainty = min(
+                        1.0,
+                        self.pose_uncertainty + 0.015 + 0.04 * (1.0 - quality),
+                    )
                 if destination != origin:
                     if (
                         self._route
@@ -148,6 +181,9 @@ class SpatialMemory:
                     ):
                         self._route.pop()
                         self._backtracking = False
+                        # Recognizing a previously visited perceptual place is
+                        # a weak loop-closure event and reduces odometry drift.
+                        self.pose_uncertainty = max(0.04, self.pose_uncertainty * 0.72)
                     else:
                         self._route.append(
                             RouteStep(
@@ -304,6 +340,11 @@ class SpatialMemory:
         return {
             "current_place": self.current_place,
             "heading_rad": round(self.heading_rad, 4),
+            "relative_pose": {
+                "x": round(self.pose_x, 4),
+                "z": round(self.pose_z, 4),
+                "uncertainty": round(self.pose_uncertainty, 4),
+            },
             "route_depth": len(self._route),
             "backtracking": self._backtracking,
             "failed_moves_here": self._failed_moves.get(
