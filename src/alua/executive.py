@@ -140,6 +140,8 @@ class ExecutiveController:
             "need",
             "collect",
             "resource",
+            "backtrack",
+            "deliberate",
         }:
             intent = self.fallback_policy.choose(frame, goal, memory)
         elif step.kind == "reorient_escape":
