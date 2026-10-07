@@ -1097,9 +1097,25 @@ class Store:
                     outcome = None
             item["outcome"] = outcome
             signal = outcome.get("success_signal") if isinstance(outcome, dict) else None
+            feedback = outcome.get("feedback_signal") if isinstance(outcome, dict) else None
             item["outcome_success"] = (
-                bool(float(signal) >= 0.5)
+                bool(
+                    float(signal) >= 0.55
+                    and feedback not in {
+                        "partial_effect",
+                        "no_effect",
+                        "resistance",
+                        "impact_resisted",
+                        "containment_failed",
+                    }
+                )
                 if isinstance(signal, (int, float)) and not isinstance(signal, bool)
+                else None
+            )
+            progress = outcome.get("progress_signal") if isinstance(outcome, dict) else None
+            item["progress_signal"] = (
+                max(0.0, min(1.0, float(progress)))
+                if isinstance(progress, (int, float)) and not isinstance(progress, bool)
                 else None
             )
             result.append(item)
