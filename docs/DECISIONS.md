@@ -88,3 +88,27 @@ Přijato 2026-10-07.
 Voyager, Odyssey, luanti-voyager, Mineflayer Pathfinder, Baritone, Craftium, MineStudio, OpenHA a Mindcraft byly použity jako referenční architektury. Minecraft-specific knowledge, privileged map state, generated executable code a cizí world truth se nepřenášejí.
 
 Baritone kód se kvůli LGPL-3.0 do MIT jádra Alua nekopíruje. Používá se pouze obecná algoritmická inspirace.
+
+## ADR-A021 – Perceptuální topologie místo privilegované mapy
+
+Přijato 2026-10-07.
+
+Alua smí dlouhodobě ukládat pouze perceptuální place signatures a empirické přechody po vlastních motorických akcích. Signature není považována za unikátní fyzickou lokaci a nesmí obsahovat absolutní World pozici ani technické identity.
+
+## ADR-A022 – Goal utility je evidence-weighted, nikoli sémanticky předprogramovaná
+
+Přijato 2026-10-07.
+
+Intrinsic goal ranking kombinuje base prioritu s vlastní success/failure evidencí, informační nejistotou, novelty a tělesným damage. Utility model nesmí obsahovat skryté významy objektů.
+
+## ADR-A023 – Každý nový belief má dohledatelnou evidence stopu
+
+Přijato 2026-10-07.
+
+Schema v4 ukládá `belief_evidence` s session, observation sequence, decision ID a support/contradiction signálem. Belief bez možnosti dohledat původ není cílový stav projektu.
+
+## ADR-A024 – Behavioral quality musí být měřitelná offline
+
+Přijato 2026-10-07.
+
+Persistované episodes a decision/outcome trace musí jít vyhodnotit bez běžícího Worldu. `alua benchmark` slouží jako acceptance gate proti regresím typu look-loop a action stereotype.
