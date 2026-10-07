@@ -498,5 +498,53 @@ class StoreTests(unittest.TestCase):
                 store.close()
 
 
+    def test_schema_v5_cognitive_records_round_trip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "alua.sqlite3")
+            try:
+                record = store.upsert_cognitive_record(
+                    agent_id="alua:1",
+                    record_key="self:test",
+                    record_kind="self_model",
+                    payload={"value": 3, "target_ref": "must-not-persist"},
+                    sequence=10,
+                    supported=True,
+                )
+                self.assertEqual(record["payload"]["value"], 3)
+                self.assertNotIn("target_ref", record["payload"])
+                self.assertEqual(store.summary("alua:1")["cognitive_records"], 1)
+            finally:
+                store.close()
+
+    def test_v4_database_is_backed_up_on_v5_migration(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy-v4.sqlite3"
+            db = sqlite3.connect(path)
+            db.executescript(
+                """
+                CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+                INSERT INTO meta(key,value) VALUES('schema_version','4');
+                """
+            )
+            db.commit()
+            db.close()
+            store = Store(path)
+            try:
+                self.assertIsNotNone(store.last_backup_path)
+                self.assertTrue(store.last_backup_path.exists())
+                self.assertEqual(store.summary("alua:1")["schema_version"], 5)
+                record = store.upsert_cognitive_record(
+                    agent_id="alua:1",
+                    record_key="test",
+                    record_kind="test",
+                    payload={"ok": True},
+                    sequence=1,
+                )
+                self.assertTrue(record["payload"]["ok"])
+            finally:
+                store.close()
+
+
+
 if __name__ == "__main__":
     unittest.main()
