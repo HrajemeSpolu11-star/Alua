@@ -202,7 +202,7 @@ class GoalTests(unittest.TestCase):
         self.assertEqual(goal.target_signature, "p-touching")
 
     def test_old_failures_do_not_force_recovery_after_successes_dominate(self) -> None:
-        frame = make_frame(40)
+        frame = make_frame(41)
         memory = WorkingMemory()
         memory.add(frame)
 
@@ -212,7 +212,7 @@ class GoalTests(unittest.TestCase):
                     "attempts": 8,
                     "successes": 5,
                     "failures": 3,
-                    "last_sequence": 39,
+                    "last_sequence": 40,
                 }
             return None
 
