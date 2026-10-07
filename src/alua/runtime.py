@@ -219,7 +219,7 @@ class Runtime:
                 experiment = cognitive_snapshot.experiment
                 return (
                     GoalCandidate(
-                        key=f"experiment:{experiment.kind}:{experiment.target_signature}",
+                        key=f"inspect:{experiment.target_signature}",
                         kind="inspect_object",
                         priority=min(
                             0.98,
