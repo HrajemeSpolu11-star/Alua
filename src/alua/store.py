@@ -409,6 +409,15 @@ class Store:
                 (request_id, status, int(bridge_action_sequence), time.time(), decision_id),
             )
 
+    def mark_decision_rejected(self, decision_id: str, status: str) -> None:
+        if not status or len(status) > 64:
+            raise ValueError("decision rejection status must be short")
+        with self._transaction() as db:
+            db.execute(
+                "UPDATE decisions SET status=?,updated_at=? WHERE decision_id=?",
+                (status, time.time(), decision_id),
+            )
+
     def record_expectation(
         self,
         *,

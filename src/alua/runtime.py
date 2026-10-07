@@ -225,7 +225,27 @@ class Runtime:
             goal_kind=goal.kind,
             skill_key=skill_key,
         )
-        response = self.bridge.submit_action(action)
+        try:
+            response = self.bridge.submit_action(action)
+        except BridgeHttpError as exc:
+            if exc.code != "target_expired":
+                raise
+            self.store.mark_decision_rejected(decision_id, "stale_target")
+            LOG.info(
+                "Zahozen zastaralý target_ref z observation %s; čekám na čerstvý vjem",
+                latest.sequence,
+            )
+            return StepResult(
+                session_id,
+                changed,
+                processed,
+                outcomes_resolved,
+                False,
+                decision_id,
+                goal.key,
+                skill_key,
+            )
+
         self.store.mark_decision_submitted(
             decision_id,
             response["request_id"],

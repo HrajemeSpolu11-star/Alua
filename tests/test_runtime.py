@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from alua.config import Config
+from alua.errors import BridgeHttpError
 from alua.runtime import Runtime
 from alua.store import Store
 
@@ -76,6 +77,14 @@ class FakeBridge:
         }
 
 
+class ExpiredTargetBridge(FakeBridge):
+    def submit_action(self, action):
+        if "target_ref" in action:
+            self.actions.append(action)
+            raise BridgeHttpError(409, "target_expired", "target_ref není platný pro tohoto agenta")
+        return super().submit_action(action)
+
+
 class RuntimeTests(unittest.TestCase):
     def test_verified_outcome_updates_belief_goal_and_skill_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -120,6 +129,42 @@ class RuntimeTests(unittest.TestCase):
                 decision = store.decision(first.decision_id)
                 self.assertEqual(decision["goal_kind"], "inspect_object")
                 self.assertNotIn("t1_7", decision["action_json"])
+            finally:
+                store.close()
+
+
+
+    def test_expired_target_is_rejected_locally_without_stopping_runtime(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Config(
+                agent_id="alua:1",
+                bridge_url="http://127.0.0.1:8787",
+                agent_token="a" * 48,
+                database_path=Path(tmp) / "alua.sqlite3",
+            )
+            store = Store(config.database_path)
+            bridge = ExpiredTargetBridge()
+            try:
+                runtime = Runtime(config, store, bridge)
+                result = runtime.step()
+                self.assertEqual(result.observations_processed, 1)
+                self.assertFalse(result.action_submitted)
+                self.assertEqual(result.goal_key, "inspect:pabc")
+                self.assertEqual(len(bridge.actions), 1)
+                self.assertEqual(store.summary("alua:1")["pending_expectations"], 0)
+                self.assertIsNone(store.goal_stats("alua:1", "inspect:pabc"))
+
+                decision = store.decision(result.decision_id)
+                self.assertIsNotNone(decision)
+                self.assertEqual(decision["status"], "stale_target")
+
+                # Cursor už je posunut za starý vjem. Další čerstvý frame
+                # může vytvořit novou netargetovanou akci; důležité je, že se
+                # neopakuje expirovaný target_ref a runtime pokračuje.
+                again = runtime.step()
+                self.assertTrue(again.action_submitted)
+                self.assertEqual(len(bridge.actions), 2)
+                self.assertNotIn("target_ref", bridge.actions[1])
             finally:
                 store.close()
 

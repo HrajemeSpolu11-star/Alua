@@ -1,5 +1,12 @@
 # Přehled změn
 
+## 2026-10-07 – Alua přežije expirovaný target_ref
+
+- `409 target_expired` už neukončí celý kognitivní runtime;
+- rozhodnutí vytvořené nad stale handle se uloží jako `stale_target`, nevytvoří expectation ani falešný goal attempt a runtime čeká na čerstvý vjem;
+- přidán regresní test, že stejný zastaralý handle se po posunu observation cursoru neopakuje.
+
+
 ## Nezveřejněno
 
 ### 2026-10-06 – vnímání vlastního těla a volba ruky
