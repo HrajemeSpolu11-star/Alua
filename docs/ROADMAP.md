@@ -55,8 +55,8 @@ Zbývá:
 - decay;
 - obecnější transition model a generalizace.
 
-## Fáze E – první autonomní rozhodování
-Stav: bezpečná embodied explorace.
+## Fáze E – autonomní rozhodování
+Stav: embodied explorace + Cognitive Architecture V2.
 
 Hotovo:
 - cautious move;
@@ -67,11 +67,21 @@ Hotovo:
 - pending expectation gate;
 - outcome attribution.
 
+Hotovo navíc:
+- intrinsic/reflex goal selection;
+- egocentrický local world model;
+- behavior critic;
+- bounded multi-step planner;
+- hierarchical data-only skill graph;
+- receding-horizon local navigation;
+- uncertainty-driven information scan;
+- trajectory evaluation.
+
 Zbývá:
 - fyzické needs z metabolismu;
-- goal selection;
-- utility/risk learning;
-- bounded multi-step planner;
+- explicitní utility/risk learning;
+- dlouhodobá topologická paměť pouze z vlastních vjemů;
+- explicitní preconditions pro naučené composite skills;
 - potom autonomní pickup/push/break.
 
 ## Fáze F – end-to-end AluaWorld
@@ -82,16 +92,29 @@ Technické části existují:
 - Alua embodied runtime;
 - E2E smoke helper.
 
+Hotovo:
+- skutečný Termux/Luanti E2E embodied loop;
+- observations -> decisions -> actions -> sensory outcomes -> beliefs/skills.
+
 Zbývá:
-- provést smoke test na skutečném Termux/Luanti runtime;
-- restartovat jednotlivě AI, Bridge a World a ověřit recovery;
-- dlouhodobě měřit CPU/RAM/DB růst.
+- restartovat jednotlivě AI, Bridge a World v delším soak testu;
+- dlouhodobě měřit CPU/RAM/DB růst;
+- po V2 provést nový behaviorální field test přes `alua evaluate`.
 
 ## Fáze G – učení dovedností
 
-- procedurální memory;
-- vícekrokové postupy;
-- přeplánování;
+Stav: základ aktivní.
+
+Hotovo:
+- procedurální primitive memory;
+- reusable skill gating;
+- vestavěné composite behavior skills;
+- vícekrokové bounded postupy;
+- runtime přeplánování.
+
+Zbývá:
+- automatická indukce composite skillů z úspěšných trajectories;
+- explicitní preconditions;
 - generalizace;
 - risk a utility learning.
 
