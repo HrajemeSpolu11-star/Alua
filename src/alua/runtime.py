@@ -184,6 +184,7 @@ class Runtime:
             self.store,
             self.config.agent_id,
             goal,
+            latest,
         )
         if retrieved is not None:
             skill_key, intent = retrieved
