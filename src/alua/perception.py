@@ -117,7 +117,15 @@ def _motor_events(channels: dict[str, Any]) -> tuple[dict[str, Any], ...]:
                 "progress_signal": _number(event.get("progress_signal"))
                 if _number(event.get("progress_signal")) is not None
                 else (_number(event.get("success_signal")) or 0.0),
+                "vertical_progress_signal": _number(event.get("vertical_progress_signal")) or 0.0,
                 "slip_signal": _number(event.get("slip_signal")) or 0.0,
+                "nutrition_delta_signal": _number(event.get("nutrition_delta_signal")) or 0.0,
+                "hydration_delta_signal": _number(event.get("hydration_delta_signal")) or 0.0,
+                "stamina_delta_signal": _number(event.get("stamina_delta_signal")) or 0.0,
+                "inventory_delta_signal": _number(event.get("inventory_delta_signal")) or 0.0,
+                "movement_mode": event.get("movement_mode")
+                if isinstance(event.get("movement_mode"), str)
+                else None,
                 "feedback_signal": event.get("feedback_signal")
                 if isinstance(event.get("feedback_signal"), str)
                 else "no_effect",
