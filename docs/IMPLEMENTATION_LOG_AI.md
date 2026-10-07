@@ -1,5 +1,24 @@
 # Implementační deník Alua AI
 
+## 2026-10-07 – Cognitive Architecture V2 podle open-source reference auditu
+
+Po stabilizaci embodied loopu nebyl další krok řešen další sérií lokálních `look/move` záplat. Byl proveden referenční audit Voyager, Odyssey, luanti-voyager, Mineflayer Pathfinder, Baritone, Craftium, MineStudio, OpenHA a Mindcraft.
+
+Do Alua byly implementovány obecné principy, které neporušují epistemickou hranici:
+- egocentrický world model místo skryté globální mapy;
+- cost-based receding-horizon navigation;
+- self-critic nad vlastní action/outcome historií;
+- hierarchy goal -> composite skill -> bounded plan -> controller -> primitive action;
+- explicitní replan;
+- gating naučených primitive skillů čerstvým perceptem;
+- offline trajectory metrics;
+- information scan podle uncertainty místo pevného časového patternu.
+
+Stávající Bridge contract, SQLite beliefs/episodes, target_ref pravidla a future-observation learning byly zachovány.
+
+Implementace: `world_model.py`, `navigation.py`, `critic.py`, `skill_graph.py`, `planning.py`, `executive.py`, `evaluation.py`.
+
+
 ## 2026-10-07 – druhý field fix: globální scan gate
 
 Po nasazení prvního brain auditu živý log stále ukázal několik po sobě jdoucích `look`. Důvodem bylo, že anti-loop logika byla oddělená pro `scan_obstacle`, `scan_recovery` a `scan_periodic`; různé scan kindy se tedy mohly střídat. Současně se používal `last_sequence` z dlouhodobých goal stats, přestože observation sequence se při nové World session resetuje.
