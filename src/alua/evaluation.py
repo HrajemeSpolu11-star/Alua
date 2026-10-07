@@ -3,6 +3,10 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
+from .perception import build_frame
+from .topology import perceptual_place_signature
+from .world_model import EgocentricWorldModel
+
 
 def _longest_streak(values: list[str], expected: str | None = None) -> int:
     longest = 0
@@ -68,4 +72,59 @@ def evaluate_trace(trace: list[dict[str, Any]]) -> dict[str, Any]:
                 and move_successes / len(move_resolved) < 0.35
             ),
         },
+    }
+
+
+def evaluate_sensory_replay(episodes: list[dict[str, Any]]) -> dict[str, Any]:
+    """Replay persisted sensory frames through the local model without acting."""
+    model = EgocentricWorldModel()
+    uncertainties: list[float] = []
+    blocked = 0
+    places: set[str] = set()
+    processed = 0
+    for payload in episodes:
+        try:
+            frame = build_frame(payload)
+        except (KeyError, TypeError, ValueError):
+            continue
+        model.update(frame)
+        processed += 1
+        uncertainties.append(model.horizontal_uncertainty())
+        blocked += 1 if model.front_is_blocked() else 0
+        places.add(perceptual_place_signature(frame))
+
+    return {
+        "observations": processed,
+        "unique_perceptual_places": len(places),
+        "mean_horizontal_uncertainty": (
+            round(sum(uncertainties) / len(uncertainties), 4)
+            if uncertainties else None
+        ),
+        "front_blocked_fraction": (
+            round(blocked / processed, 4) if processed else None
+        ),
+        "final_world_model": model.diagnostic_summary() if processed else None,
+    }
+
+
+def acceptance_report(
+    behavior: dict[str, Any],
+    sensory: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    flags = behavior.get("quality_flags", {})
+    checks = {
+        "no_look_loop": not bool(flags.get("look_loop_detected")),
+        "no_action_stereotype": not bool(flags.get("action_stereotype_detected")),
+        "move_quality_ok": not bool(flags.get("low_move_success")),
+        "has_decisions": int(behavior.get("decisions", 0)) > 0,
+        "has_observed_outcome": int(behavior.get("resolved_outcomes", 0)) > 0,
+    }
+    if sensory is not None:
+        checks["has_sensory_replay"] = int(sensory.get("observations", 0)) > 0
+        decisions = int(behavior.get("decisions", 0))
+        observations = int(sensory.get("observations", 0))
+        checks["observations_cover_decisions"] = observations >= decisions if decisions else observations > 0
+    return {
+        "passed": all(checks.values()),
+        "checks": checks,
     }
