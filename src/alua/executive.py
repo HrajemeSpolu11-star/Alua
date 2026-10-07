@@ -131,7 +131,16 @@ class ExecutiveController:
         step = plan.steps[self.step_index]
         critique = self.critic.assess()
 
-        if step.kind in {"retreat", "inspect", "scan"}:
+        if step.kind in {
+            "retreat",
+            "inspect",
+            "scan",
+            "surface",
+            "recover",
+            "need",
+            "collect",
+            "resource",
+        }:
             intent = self.fallback_policy.choose(frame, goal, memory)
         elif step.kind == "reorient_escape":
             left_score = (
@@ -169,39 +178,49 @@ class ExecutiveController:
                 },
             )
         else:
-            if step.kind == "navigate_lateral":
-                mode = "lateral"
-            elif step.kind == "navigate_escape":
-                mode = "escape"
+            terrain_intent = (
+                self.fallback_policy.terrain_intent(frame, goal, memory)
+                if goal.kind == "explore"
+                else None
+            )
+            if terrain_intent is not None:
+                intent = terrain_intent
             else:
-                mode = "frontier"
-            choice = self.navigator.choose(
-                self.world_model,
-                mode=mode,
-                persistent_penalties=self._navigation_priors,
-            )
-            intent = ActionIntent(
-                action_type="move",
-                parameters={
-                    "forward": choice.forward,
-                    "strafe": choice.strafe,
-                    "duration_s": choice.duration_s,
-                    "speed_fraction": choice.speed_fraction,
-                },
-                duration=None,
-                target_ref=None,
-                target_signature=None,
-                rationale={
-                    "policy": "hierarchical_local_navigation",
-                    "goal_key": goal.key,
-                    "goal_kind": goal.kind,
-                    "goal_priority": goal.priority,
-                    "observation_sequence": frame.sequence,
-                    "maneuver": choice.maneuver,
-                    "navigation_score": round(choice.score, 4),
-                    **choice.reason,
-                },
-            )
+                if step.kind == "navigate_lateral":
+                    mode = "lateral"
+                elif step.kind == "navigate_escape":
+                    mode = "escape"
+                else:
+                    mode = "frontier"
+                choice = self.navigator.choose(
+                    self.world_model,
+                    mode=mode,
+                    persistent_penalties=self._navigation_priors,
+                )
+                intent = ActionIntent(
+                    action_type="move",
+                    parameters={
+                        "mode": "walk",
+                        "forward": choice.forward,
+                        "strafe": choice.strafe,
+                        "vertical": 0.0,
+                        "duration_s": choice.duration_s,
+                        "speed_fraction": choice.speed_fraction,
+                    },
+                    duration=None,
+                    target_ref=None,
+                    target_signature=None,
+                    rationale={
+                        "policy": "hierarchical_local_navigation",
+                        "goal_key": goal.key,
+                        "goal_kind": goal.kind,
+                        "goal_priority": goal.priority,
+                        "observation_sequence": frame.sequence,
+                        "maneuver": choice.maneuver,
+                        "navigation_score": round(choice.score, 4),
+                        **choice.reason,
+                    },
+                )
 
         rationale = {
             **intent.rationale,
