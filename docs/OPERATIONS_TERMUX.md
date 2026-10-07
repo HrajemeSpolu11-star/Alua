@@ -90,3 +90,23 @@ V1:
 - komunikuje pouze přes localhost;
 - neposílá data do cloudu;
 - neukládá bearer token.
+
+## Behaviorální report Cognitive V2
+
+Report nevyžaduje běžící Bridge ani World. Čte pouze lokální kognitivní DB:
+
+```bash
+cd "$HOME/alua/Alua"
+set -a
+. ./.env
+set +a
+.venv/bin/python -m alua evaluate
+```
+
+Pro delší vzorek:
+
+```bash
+.venv/bin/python -m alua evaluate --limit 2000
+```
+
+Po nasazení V2 se doporučuje nejprve několik minut normálně nechat Alua autonomně běžet a potom report zkontrolovat. `look_loop_detected=true` nebo `action_stereotype_detected=true` je důvod otevřít decision rationale a neřešit problém pouze vizuálním pozorováním entity.
