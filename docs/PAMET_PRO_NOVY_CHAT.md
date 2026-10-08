@@ -1,5 +1,25 @@
 # Paměť projektu Alua AI pro nový chat
 
+## Finální validace Cognitive Core V5 – 2026-10-08
+
+Cognitive Core V5 je sloučený do `main`.
+
+Ověřený merge commit:
+- `2da7e5c08e961e21e1e4ece36e54a1fe53339dcb`;
+- short SHA `2da7e5c`;
+- message `Cognitive Core V5: memory, prediction, metacognition and backtracking (#10)`.
+
+Finální GitHub Actions na `main`:
+- 121 unit/regression testů;
+- všechny prošly;
+- `tools/audit_repo.py` -> `AUDIT OK`;
+- syntax kontrola Termux E2E helperu prošla.
+
+SQLite schema je nyní v5. První otevření existující v4 DB po pullu provede migraci se zálohou před změnou.
+
+V5 je implementovaná vyšší kognitivní architektura, nikoli tvrzení o hotové AGI. Aktivně běží attention, scene/temporal model, object permanence, route memory/backtracking, relative odometry, prediction/risk/self/causal models, metacognition, drives, experiments, missions, consolidation, concepts a strategy transfer. Social/testimony/peer vrstvy potřebují explicitní budoucí World sensory data, než mohou skutečně řídit sociální chování.
+
+
 Aktualizováno: 2026-10-07.
 
 
