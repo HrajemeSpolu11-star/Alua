@@ -545,6 +545,7 @@ class CognitiveCore:
             frame,
             store=store,
             agent_id=agent_id,
+            goal_kind=goal_kind if isinstance(goal_kind, str) else None,
         )
         self.meta.record_outcome(
             progress=progress,

@@ -72,6 +72,52 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(metrics["quality_flags"]["navigation_stagnation_detected"])
         self.assertLess(metrics["mean_move_progress"], 0.55)
 
+    def test_real_field_backtrack_loop_rejected_even_at_99_percent_motor_success(self) -> None:
+        # Android field evidence: 496 of 500 goals were spatial_backtrack;
+        # 495 successful physical moves did NOT represent exploration.
+        trace = [
+            {
+                "action_type": "move",
+                "goal_kind": "spatial_backtrack" if i < 496 else "satisfy_thirst",
+                "status": "resolved",
+                "expectation_state": "resolved",
+                "outcome_success": i % 125 != 0,
+                "progress_signal": 0.78,
+            }
+            for i in range(500)
+        ]
+        result = evaluate_trace(trace)
+        self.assertGreater(result["move_success_rate"], 0.98)
+        self.assertEqual(result["longest_backtrack_streak"], 496)
+        self.assertEqual(result["spatial_backtrack_fraction"], 0.992)
+        self.assertTrue(result["quality_flags"]["spatial_backtrack_dominance_detected"])
+        self.assertFalse(acceptance_report(result)["passed"])
+        self.assertFalse(acceptance_report(result)["checks"]["no_spatial_backtrack_dominance"])
+
+    def test_short_verified_backtrack_is_not_marked_as_infinite_loop(self) -> None:
+        trace = [
+            {
+                "action_type": "move",
+                "goal_kind": "spatial_backtrack",
+                "status": "resolved",
+                "expectation_state": "resolved",
+                "outcome_success": True,
+                "progress_signal": .92,
+            }
+            for _ in range(7)
+        ]
+        trace.extend({
+            "action_type": "move",
+            "goal_kind": "explore",
+            "status": "resolved",
+            "expectation_state": "resolved",
+            "outcome_success": True,
+            "progress_signal": .92,
+        } for _ in range(70))
+        result = evaluate_trace(trace)
+        self.assertFalse(result["quality_flags"]["spatial_backtrack_dominance_detected"])
+        self.assertTrue(acceptance_report(result)["passed"])
+
     def test_sensory_replay_and_acceptance_gate(self) -> None:
         episodes = [
             {

@@ -57,6 +57,87 @@ class SpatialMemoryTests(unittest.TestCase):
         self.assertEqual(directive.maneuver, "back")
         self.assertIsNotNone(directive.target_place)
 
+    def test_backtrack_success_does_not_create_new_outward_route(self) -> None:
+        spatial = SpatialMemory()
+        model = EgocentricWorldModel()
+        start = frame(1, "origin")
+        spatial.observe(start)
+        departure = {"type": "move", "parameters": {"mode": "walk", "forward": 1.0, "strafe": 0.0}}
+        spatial.begin_action(departure)
+        distant = frame(2, "destination", blocked=True)
+        spatial.finish_action(departure, True, .90, distant)
+        spatial.observe(distant)
+        model.update(distant)
+        self.assertEqual(len(spatial._route), 1)
+        expected_origin = spatial._route[0].origin
+        self.assertIsNotNone(spatial.backtrack_directive(model, force=True))
+
+        # Physically successful inverse movement but still no sensory match
+        # to the predecessor. This MUST NOT create an outbound C->B route.
+        returning = {"type": "move", "parameters": {"mode": "walk", "forward": -0.65, "strafe": 0.0}}
+        unexpected = frame(3, "aliased-neighbor", blocked=True)
+        spatial.begin_action(returning)
+        spatial.finish_action(returning, True, .92, unexpected, goal_kind="spatial_backtrack")
+        spatial.observe(unexpected)
+        model.update(unexpected)
+        self.assertEqual(len(spatial._route), 1)
+        self.assertEqual(spatial._route[0].origin, expected_origin)
+        self.assertTrue(spatial.diagnostics()["backtracking"])
+
+    def test_backtrack_abandons_unrecognized_route_after_bounded_real_attempts(self) -> None:
+        spatial = SpatialMemory()
+        model = EgocentricWorldModel()
+        start = frame(1, "origin")
+        spatial.observe(start)
+        departure = {"type": "move", "parameters": {"mode": "walk", "forward": 1.0, "strafe": 0.0}}
+        spatial.begin_action(departure)
+        distant = frame(2, "destination", blocked=True)
+        spatial.finish_action(departure, True, .90, distant)
+        spatial.observe(distant)
+        model.update(distant)
+        self.assertIsNotNone(spatial.backtrack_directive(model, force=True))
+
+        returning = {"type": "move", "parameters": {"mode": "walk", "forward": -0.65, "strafe": 0.0}}
+        for i in range(8):
+            # Different perceptual context each time, never recognizes origin.
+            sensed = frame(3 + i, f"unrecognized-{i}", blocked=True)
+            spatial.begin_action(returning)
+            spatial.finish_action(returning, True, .84, sensed, goal_kind="spatial_backtrack")
+            spatial.observe(sensed)
+            model.update(sensed)
+            self.assertEqual(len(spatial._route), 1)
+            if i < 7:
+                self.assertIsNotNone(spatial.backtrack_directive(model, force=True))
+
+        self.assertIsNone(spatial.backtrack_directive(model, force=True))
+        self.assertEqual(len(spatial._route), 0)
+        self.assertFalse(spatial.diagnostics()["backtracking"])
+
+    def test_backtrack_route_pops_only_when_original_percept_reappears(self) -> None:
+        spatial = SpatialMemory()
+        model = EgocentricWorldModel()
+        start = frame(1, "origin")
+        spatial.observe(start)
+        depart = {"type": "move", "parameters": {"mode": "walk", "forward": 1.0, "strafe": 0.0}}
+        spatial.begin_action(depart)
+        distant = frame(2, "destination", blocked=True)
+        spatial.finish_action(depart, True, .95, distant)
+        spatial.observe(distant)
+        model.update(distant)
+        self.assertIsNotNone(spatial.backtrack_directive(model, force=True))
+
+        return_action = {"type": "move", "parameters": {"mode": "walk", "forward": -0.65, "strafe": 0.0}}
+        spatial.begin_action(return_action)
+        original_again = frame(3, "origin")
+        spatial.finish_action(
+            return_action, True, .90, original_again,
+            goal_kind="spatial_backtrack",
+        )
+        spatial.observe(original_again)
+        self.assertEqual(len(spatial._route), 0)
+        self.assertIsNone(spatial.backtrack_directive(model, force=True))
+        self.assertFalse(spatial.diagnostics()["backtracking"])
+
     def test_heading_change_requires_turn_before_return(self) -> None:
         spatial = SpatialMemory()
         model = EgocentricWorldModel()
