@@ -87,19 +87,19 @@ class SkillGraph:
             ),
             "explore_frontier": SkillDefinition(
                 "explore_frontier",
-                frozenset({"explore"}),
+                frozenset({"explore", "satisfy_thirst", "satisfy_hunger"}),
                 ("navigate_frontier",),
                 "move toward the best currently perceived local frontier",
             ),
             "bypass_obstacle": SkillDefinition(
                 "bypass_obstacle",
-                frozenset({"explore"}),
+                frozenset({"explore", "satisfy_thirst", "satisfy_hunger"}),
                 ("navigate_lateral", "navigate_frontier"),
                 "use a lateral step and then resume frontier motion",
             ),
             "escape_stagnation": SkillDefinition(
                 "escape_stagnation",
-                frozenset({"explore"}),
+                frozenset({"explore", "satisfy_thirst", "satisfy_hunger"}),
                 ("reorient_escape", "navigate_escape", "navigate_frontier"),
                 "rotate the body toward a better frontier, escape, then resume exploration",
             ),
@@ -125,6 +125,13 @@ class SkillGraph:
         if goal.kind == "recover_stamina":
             return self.get("recover_body")
         if goal.kind in {"satisfy_thirst", "satisfy_hunger"}:
+            reason = goal.reason if isinstance(goal.reason, dict) else {}
+            if reason.get("phase") == "search" and not goal.target_ref:
+                if critique.force_replan:
+                    return self.get("escape_stagnation")
+                if model.front_is_blocked():
+                    return self.get("bypass_obstacle")
+                return self.get("explore_frontier")
             return self.get("satisfy_body_need")
         if goal.kind == "collect_object":
             return self.get("collect_observed_object")
