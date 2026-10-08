@@ -10,6 +10,7 @@ from .bridge_client import BridgeClient
 from .config import Config
 from .errors import AluaError
 from .evaluation import acceptance_report, evaluate_sensory_replay, evaluate_trace
+from .flight_recorder import output_lines, secure_log_file
 from .runtime import Runtime
 from .store import Store
 
@@ -26,6 +27,13 @@ def _parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--limit", type=int, default=500, help="Maximální počet posledních rozhodnutí")
     benchmark = commands.add_parser("benchmark", help="Provede offline behaviorální a sensory acceptance test")
     benchmark.add_argument("--limit", type=int, default=2000, help="Maximální počet posledních rozhodnutí a vjemů")
+    record = commands.add_parser(
+        "mind-log", help="Podrobný soukromý JSONL log vjemů, rozhodnutí, modelu a fyzických výsledků"
+    )
+    record.add_argument("--limit", type=int, default=200, help="Počet posledních rozhodnutí/vjemů")
+    record.add_argument("--output", default=None, help="Volitelný privátní soubor .jsonl (append)")
+    record.add_argument("--follow", action="store_true", help="Průběžný výpis při živém běhu AI")
+    record.add_argument("--no-episodes", action="store_true", help="Bez kompletních smyslových epizod")
     run = commands.add_parser("run", help="Spustí kognitivní runtime")
     run.add_argument("--once", action="store_true", help="Provede právě jeden cyklus")
     return parser
@@ -41,6 +49,17 @@ def main(argv: list[str] | None = None) -> int:
         config = Config.from_env()
         store = Store(config.database_path)
         try:
+            if args.command == "mind-log":
+                limit = max(1, min(2000, int(args.limit)))
+                if args.output:
+                    with secure_log_file(args.output) as log_file:
+                        output_lines(store, config.agent_id, limit,
+                                     not args.no_episodes, log_file, follow=args.follow)
+                else:
+                    output_lines(store, config.agent_id, limit,
+                                 not args.no_episodes, sys.stdout, follow=args.follow)
+                return 0
+
             if args.command == "status":
                 print(json.dumps(store.summary(config.agent_id), ensure_ascii=False, indent=2))
                 return 0
