@@ -1,5 +1,13 @@
 # Přehled změn
 
+## 2026-10-08 – podrobný lokální Cognitive V5 mind-log
+
+- Přidán operátorský příkaz `python -m alua mind-log --limit 200 --follow --output "$HOME/alua-mind.jsonl"`. Neotevírá žádné nové HTTP API.
+- Soukromý append JSONL obsahuje skutečné smyslové epizody, každý uložený cíl/rozhodnutí včetně kognitivního odůvodnění, zvolenou akci, očekávání, pozdější fyzické motor outcomes a aktuální Cognitive V5 model.
+- Data se čtou výhradně z existující Alua SQLite DB, nezasahují do AI cílů a netvrdí úspěch při pouhém Bridge ACK.
+- Zabezpečena práva vytvořeného souboru 0600, regresní testy a dokumentace.
+
+
 ## 2026-10-08 – kompletní dokumentační audit Cognitive Core V5
 
 - přidán `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md` jako úplný krokový audit od field problému přes návrh, schema v5, všechny nové moduly, runtime integraci, CI regresi, deployment, rollback a Definition of Done;
