@@ -1,5 +1,13 @@
 # Přehled změn
 
+## 2026-10-08 – oprava backtrack ping-pong a falešně úspěšného benchmarku (živá session e5)
+
+- Na Androidu AI po předchozí opravě PR #15 fyzicky přešlapovala mezi několika místy, i když benchmark hlásil `acceptance.passed=true`.
+- Skutečný `benchmark --limit 500`: 500 rozhodnutí, 496× `spatial_backtrack`, 499× `move`, 495 z 499 reálných motorických výsledků úspěšných (99,2 %), pouze 5 percepčních míst a 100 % snímků s blokovaným předním směrem; max série `move` 495. Motorický úspěch se proto nerovná úspěšnému průzkumu.
+- Oprava `SpatialMemory`: návratový motorický pohyb při nepoznaném předchozím místě již **nezakládá novou odchozí trasu**; paměť uchovává návratový cíl přes několik smyslových pozorování, až po 8 skutečně vyhodnocených pokusech nedůvěryhodnou hranu opustí.
+- Oprava `evaluation.py`: benchmark nyní odmítne extrémně převládající a dlouhou sérii `spatial_backtrack`, i když pohyby probíhají fyzicky správně. Nové metriky `longest_backtrack_streak`, `spatial_backtrack_fraction` a acceptance check.
+- Přidané regresní testy a úplný popis `docs/INCIDENT_2026-10-08_BACKTRACK_PINGPONG.md`. Účinnost změny v živém běhu dosud **nepotvrzena**. Žádný reset paměti, světa ani Bridge.
+
 ## 2026-10-08 – živá akceptace transportu, navigační benchmark a oprava hledání potřeb (PR #15)
 
 - Na Android Termux potvrzen skutečný World→Bridge přenos po Bridge PR #10/#11: World byl připojen, Bridge přijímal `POST /v1/world/observations` s HTTP 202 a `alua doctor` ukazoval `last_observation_sequence=900`. Následný běh mozku prokazatelně vytvořil vlastní rozhodnutí a fyzické motorické výsledky.
