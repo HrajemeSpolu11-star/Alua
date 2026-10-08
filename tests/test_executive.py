@@ -204,6 +204,81 @@ class ExecutiveTests(unittest.TestCase):
             "satisfy_body_need",
         )
 
+    def test_thirst_search_uses_verified_one_block_vault_affordance(self) -> None:
+        # A real one-block ledge is sensed via locomotion, not a hidden map.
+        perception = build_frame({
+            "schema_version": 1, "agent_id": "alua:1",
+            "sequence": 301, "simulation_time": 301.0,
+            "channels": {
+                "vision": {"rays": [
+                    {"distance_fraction": .08, "appearance_id": "p1", "blocks_motion": True},
+                    {"distance_fraction": .90, "empty": True},
+                    {"distance_fraction": .90, "empty": True},
+                ]},
+                "locomotion": {
+                    "grounded_signal": 1,
+                    "step_up_signal": 1,
+                    "overhead_blocked_signal": 0,
+                    "front_feet_blocked_signal": 1,
+                    "front_torso_blocked_signal": 0,
+                    "front_head_blocked_signal": 0,
+                },
+                "vitals": {"stamina_fraction": 1},
+            },
+        })
+        controller = ExecutiveController()
+        memory = WorkingMemory()
+        memory.add(perception)
+        controller.observe(perception)
+        goal = GoalCandidate(
+            "need:thirst:search", "satisfy_thirst", .9,
+            reason={"phase": "search"},
+        )
+        intent = controller.choose(perception, goal, memory)
+        self.assertEqual(intent.rationale["policy"], "embodied_vault")
+        self.assertEqual(intent.parameters["mode"], "vault")
+        self.assertEqual(intent.rationale["plan_skill"], "bypass_obstacle")
+        self.assertGreaterEqual(intent.parameters["duration_s"], .6)
+
+    def test_no_vault_without_current_bodily_step_evidence(self) -> None:
+        perception = frame(302, blocked=True)
+        controller = ExecutiveController()
+        memory = WorkingMemory()
+        memory.add(perception)
+        controller.observe(perception)
+        goal = GoalCandidate("explore:open", "explore", .7)
+        intent = controller.choose(perception, goal, memory)
+        self.assertNotEqual(intent.parameters.get("mode"), "vault")
+        self.assertEqual(intent.rationale["policy"], "hierarchical_local_navigation")
+
+    def test_vault_not_repeated_when_critic_demands_escape(self) -> None:
+        perception = build_frame({
+            "schema_version": 1, "sequence": 303, "simulation_time": 303.0,
+            "channels": {
+                "vision": {"rays": [{"distance_fraction": .05, "blocks_motion": True}]},
+                "locomotion": {"step_up_signal": 1, "grounded_signal": 1,
+                               "overhead_blocked_signal": 0},
+                "vitals": {"stamina_fraction": 1.0},
+            },
+        })
+        controller = ExecutiveController()
+        memory = WorkingMemory()
+        memory.add(perception)
+        controller.observe(perception)
+        for index in range(3):
+            controller.critic.record_submission(
+                "move", "satisfy_thirst", 300 + index, maneuver="forward",
+            )
+            controller.critic.record_outcome(
+                {"type": "move", "parameters": {"mode": "vault", "forward": 1.0}},
+                False, quality=.05,
+            )
+        goal = GoalCandidate("need:thirst:search", "satisfy_thirst", .9,
+                             reason={"phase": "search"})
+        intent = controller.choose(perception, goal, memory)
+        self.assertEqual(intent.rationale["plan_skill"], "escape_stagnation")
+        self.assertEqual(intent.action_type, "look")
+
     def test_session_reset_clears_local_plan_and_navigation_history(self) -> None:
         controller = ExecutiveController()
         current = frame(1, blocked=True)
