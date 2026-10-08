@@ -1,5 +1,12 @@
 # Přehled změn
 
+## 2026-10-08 – využití skutečných motorických možností těla při výstupu na jednu kostku
+
+- Příčina pozorovaného selhání: World tělo nedokáže vyjít celou kostku pouhou chůzí (`stepheight=0.6`) a mozek vybíral `vault` pouze v omezené větvi; potřeby typu `satisfy_thirst:search` používaly jinou hierarchickou navigaci a tělesný vjem o překonatelném stupni mohl být ignorován.
+- `ExecutiveController` teď dovoluje volbu fyzického `embodied_vault` během `navigate_frontier` i `navigate_lateral`, avšak jen při současném doložení `step_up_signal`, `grounded_signal`, volného prostoru nad tělem a při neaktivním `force_replan` po špatných motorických výsledcích. Žádná interní World pravda ani automatické přidání znalostí.
+- `policy.py` používá pro `vault` 0.65 s a rychlost 0.82 (platné limity motorického kontraktu); World upravuje skutečnou vertikální rychlost při `vault` na 5.6 m/s. Přidané regresní testy včetně špatných outcomes a chybějícího tělesného vjemu.
+- Reálný výsledek překonání kostky a následný průzkum je třeba ještě otestovat na telefonu. Starý World ani SQLite paměť se nemaže.
+
 ## 2026-10-08 – oprava backtrack ping-pong a falešně úspěšného benchmarku (živá session e5)
 
 - Na Androidu AI po předchozí opravě PR #15 fyzicky přešlapovala mezi několika místy, i když benchmark hlásil `acceptance.passed=true`.
