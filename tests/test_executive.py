@@ -125,6 +125,85 @@ class ExecutiveTests(unittest.TestCase):
         self.assertEqual(second.rationale["plan_skill"], "escape_stagnation")
         self.assertEqual(second.rationale["plan_step"], "navigate_escape")
 
+    def test_thirst_search_bypasses_blocked_front_using_local_navigation(self) -> None:
+        # Regression from live Android benchmark: 175/226 decisions were
+        # thirst-driven, but the old need/search plan always moved forward.
+        controller = ExecutiveController()
+        current = frame(101, blocked=True)
+        memory = WorkingMemory()
+        memory.add(current)
+        controller.observe(current, {"left"})
+        goal = GoalCandidate(
+            "need:thirst:search", "satisfy_thirst", 0.9,
+            reason={"phase": "search", "selector": "body_need"},
+        )
+
+        intent = controller.choose(current, goal, memory)
+        self.assertEqual(intent.action_type, "move")
+        self.assertEqual(intent.rationale["plan_skill"], "bypass_obstacle")
+        self.assertEqual(intent.rationale["plan_step"], "navigate_lateral")
+        self.assertEqual(intent.rationale["policy"], "hierarchical_local_navigation")
+        self.assertLess(intent.parameters["strafe"], 0.0)
+        self.assertLess(intent.parameters["forward"], 0.5)
+
+    def test_hunger_search_uses_escape_after_verified_low_progress(self) -> None:
+        controller = ExecutiveController()
+        current = frame(110, blocked=True)
+        memory = WorkingMemory()
+        memory.add(current)
+        controller.observe(current)
+        goal = GoalCandidate(
+            "need:hunger:search", "satisfy_hunger", 0.9,
+            reason={"phase": "search"},
+        )
+        failed_action = {
+            "type": "move",
+            "parameters": {"mode": "walk", "forward": 1.0, "strafe": 0.0},
+        }
+        for sequence in range(107, 110):
+            controller.critic.record_submission(
+                "move", "satisfy_hunger", sequence, maneuver="forward",
+            )
+            controller.critic.record_outcome(
+                failed_action, False, quality=0.05,
+            )
+
+        intent = controller.choose(current, goal, memory)
+        self.assertEqual(intent.action_type, "look")
+        self.assertEqual(intent.rationale["plan_skill"], "escape_stagnation")
+        self.assertEqual(intent.rationale["plan_step"], "reorient_escape")
+
+        controller.on_submitted(intent, goal, 110)
+        controller.on_outcome(
+            {"goal_key": goal.key, "goal_kind": goal.kind,
+             "action": {"type": "look", "parameters": intent.parameters}},
+            True,
+            quality=1.0,
+        )
+        next_frame = frame(111, blocked=False)
+        memory.add(next_frame)
+        controller.observe(next_frame)
+        next_intent = controller.choose(next_frame, goal, memory)
+        self.assertEqual(next_intent.action_type, "move")
+        self.assertEqual(next_intent.rationale["plan_skill"], "escape_stagnation")
+        self.assertEqual(next_intent.rationale["plan_step"], "navigate_escape")
+
+    def test_need_with_visible_resource_still_uses_body_need_plan(self) -> None:
+        controller = ExecutiveController()
+        current = frame(120, blocked=True)
+        memory = WorkingMemory()
+        memory.add(current)
+        controller.observe(current)
+        goal = GoalCandidate(
+            "need:drink:p12", "satisfy_thirst", 0.9,
+            target_ref="t120_1", target_signature="p12",
+            reason={"phase": "drink"},
+        )
+        self.assertEqual(
+            controller._current_plan(goal, current).skill_name,
+            "satisfy_body_need",
+        )
+
     def test_session_reset_clears_local_plan_and_navigation_history(self) -> None:
         controller = ExecutiveController()
         current = frame(1, blocked=True)
