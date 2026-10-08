@@ -306,3 +306,35 @@ PerceptionFrame
 - contextual terrain/motor zkušenost se nesmí promovat do univerzálního skillu bez preconditions.
 
 Autoritativní detail: `docs/COGNITIVE_CORE_V5.md`.
+
+## Cognitive Core V5 – 2026-10-08
+
+Nad V2/V3 a Embodied Needs V4 je nově jedna koordinovaná vyšší kognitivní vrstva:
+
+```text
+PerceptionFrame
+  -> SceneIntegrator
+  -> AttentionSystem
+  -> ObjectMemory
+  -> TemporalModel
+  -> EgocentricWorldModel
+  -> PerceptualTopology
+  -> SpatialMemory
+  -> Metacognition
+  -> DriveSystem
+  -> MissionManager / ProspectiveMemory / ExperimentPlanner
+  -> PredictiveModel + RiskModel + SelfModel + StrategyLearner
+  -> Goal selection
+  -> BoundedPlanner / ExecutiveController
+  -> primitive action
+  -> future sensory outcome
+  -> prediction/risk/self/causal/strategy learning
+```
+
+V5 nepřidává privilegovanou mapu ani World truth. Prostorový model používá pouze vlastní perceptuální place signatures, relativní heading a odometrii odvozenou z vlastních potvrzených pohybů.
+
+Hlavní behaviorální změna: stagnace a slepé větve už nemusí být řešeny lokálním random-like escape. Pokud existuje ověřená route history, cognitive core preferuje explicitní návrat na předchozí známé místo.
+
+Persistentní vyšší kognice je uložená v schema v5 přes namespaced `cognitive_records`.
+
+Autoritativní popis: `docs/COGNITIVE_CORE_V5.md`.
