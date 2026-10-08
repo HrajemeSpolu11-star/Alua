@@ -314,7 +314,7 @@ class SpatialMemory:
             return None
 
         score = self.dead_end_score(model, revisit_ratio)
-        if not force and score < 0.62:
+        if not force and score < 0.62 and not self._backtracking:
             return None
 
         heading_error = _normalize_angle(
