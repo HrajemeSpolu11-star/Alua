@@ -220,3 +220,29 @@ Field acceptance V5:
 - schema migration zachová starší dlouhodobou paměť;
 - benchmark nesmí regresovat staré anti-loop invarianty.
 
+
+
+### V5 CI regresní incident
+
+Během PR #10 nové active-experiment rozhodování původně vracelo goal key `experiment:touch:pabc`. Dva existující runtime testy očekávaly kanonický `inspect:pabc` a selhaly.
+
+Testy nebyly upraveny tak, aby nový key přijaly. Opravena byla implementace:
+- experiment zůstává samostatný selector/reason;
+- fyzický goal i evidence namespace zůstávají `inspect:<appearance>`.
+
+Tím se zachovaly staré invarianty goal statistics a skill learning.
+
+### Povinné V5 field test artifacts
+
+Při reportu chyby uložit:
+- výstup `alua status`;
+- výstup `alua cognition-status`;
+- `alua evaluate --limit 2000`;
+- `alua benchmark --limit 2000`;
+- World log s action/motor outcome;
+- Bridge log pouze pro korelaci transportu;
+- přesný Alua commit;
+- existenci pre-v5 backupu;
+- screenshot/pozorování behavioru jako doplněk, nikoli jediný důkaz.
+
+Kompletní postup a rollback: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
