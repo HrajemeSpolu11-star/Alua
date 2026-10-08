@@ -125,6 +125,13 @@ class SkillGraph:
         if goal.kind == "recover_stamina":
             return self.get("recover_body")
         if goal.kind in {"satisfy_thirst", "satisfy_hunger"}:
+            reason = goal.reason if isinstance(goal.reason, dict) else {}
+            if reason.get("phase") == "search" and not goal.target_ref:
+                if critique.force_replan:
+                    return self.get("escape_stagnation")
+                if model.front_is_blocked():
+                    return self.get("bypass_obstacle")
+                return self.get("explore_frontier")
             return self.get("satisfy_body_need")
         if goal.kind == "collect_object":
             return self.get("collect_observed_object")
