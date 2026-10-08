@@ -54,6 +54,17 @@ def evaluate_trace(trace: list[dict[str, Any]]) -> dict[str, Any]:
         else None
     )
     longest_move_streak = _longest_streak(action_types, "move")
+    longest_backtrack_streak = _longest_streak(goal_kinds, "spatial_backtrack")
+    backtrack_count = sum(kind == "spatial_backtrack" for kind in goal_kinds)
+    backtrack_fraction = backtrack_count / len(trace) if trace else 0.0
+    # Do not confuse successful motor motion with successful navigation.
+    # Long sustained domination of reverse-route goals is evidence of a
+    # controller loop even when every individual step moves physically.
+    backtrack_dominance = (
+        len(trace) >= 64
+        and longest_backtrack_streak >= 32
+        and backtrack_fraction >= 0.90
+    )
     raw_same_action_streak = _longest_streak(action_types)
     navigation_stagnation = (
         len(move_progress) >= 5
@@ -65,6 +76,7 @@ def evaluate_trace(trace: list[dict[str, Any]]) -> dict[str, Any]:
         and (
             longest_move_streak < raw_same_action_streak
             or navigation_stagnation
+            or backtrack_dominance
         )
     )
 
@@ -75,6 +87,8 @@ def evaluate_trace(trace: list[dict[str, Any]]) -> dict[str, Any]:
         "status_counts": dict(Counter(statuses)),
         "longest_same_action_streak": raw_same_action_streak,
         "longest_move_streak": longest_move_streak,
+        "longest_backtrack_streak": longest_backtrack_streak,
+        "spatial_backtrack_fraction": round(backtrack_fraction, 4),
         "longest_look_streak": _longest_streak(action_types, "look"),
         "consecutive_look_pairs": consecutive_look_pairs,
         "resolved_outcomes": len(resolved),
@@ -100,6 +114,7 @@ def evaluate_trace(trace: list[dict[str, Any]]) -> dict[str, Any]:
             "look_loop_detected": consecutive_look_pairs > 0,
             "action_stereotype_detected": action_stereotype,
             "navigation_stagnation_detected": navigation_stagnation,
+            "spatial_backtrack_dominance_detected": backtrack_dominance,
             "low_move_success": (
                 len(move_resolved) >= 5
                 and (
@@ -154,6 +169,7 @@ def acceptance_report(
     checks = {
         "no_look_loop": not bool(flags.get("look_loop_detected")),
         "no_action_stereotype": not bool(flags.get("action_stereotype_detected")),
+        "no_spatial_backtrack_dominance": not bool(flags.get("spatial_backtrack_dominance_detected")),
         "move_quality_ok": not bool(flags.get("low_move_success")),
         "has_decisions": int(behavior.get("decisions", 0)) > 0,
         "has_observed_outcome": int(behavior.get("resolved_outcomes", 0)) > 0,
