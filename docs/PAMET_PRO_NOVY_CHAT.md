@@ -1,5 +1,12 @@
 # Paměť projektu Alua AI pro nový chat
 
+## AKTUÁLNÍ HANDOFF – NOVÝ BACKTRACK PING-PONG INCIDENT (2026-10-08, 12:02 CEST)
+
+- Po opravě need-search PR #15 agent ve světě **stále chodil v malém čtverci**. Nová relace těla `alua:1` (suffix `_e5`) měla v živém `benchmark --limit 500` **496 `spatial_backtrack` / 500 rozhodnutí**, 499 akcí `move`, 495 fyzických úspěchů z 499 (99,2 %), přitom 5 percepčních míst, 100 % předních snímků označených jako blocked, max 495 `move` za sebou. Starý evaluator **chybně PASS**. Nezaměňovat úspěšný motor krok s pokrokem v průzkumu!
+- Zdroj: `SpatialMemory.finish_action` uměl při fyzicky úspěšném backtracku bez rozpoznání očekávaného predecessor perceptu uložit krok jako **novou odchozí trasu**, což dovolilo střídání opačných backtrack směrů. `Runtime` dával existujícímu `spatial_backtrack` vždy prioritu.
+- Připravené řešení: `SpatialMemory` nyní nerozšiřuje outward route při probíhajícím backtracku, rozpoznané předchozí místo jedině ukončí návrat a max 8 **skutečně ověřených motorických pokusů** dovoluje opustit nedůvěryhodnou hranu. `evaluation.py` testuje dominantní goal-kind loop i při high motor success; regresní testy + full incident `docs/INCIDENT_2026-10-08_BACKTRACK_PINGPONG.md`. **Po CI/merge je potřeba nový živý Termux test; zatím nelze tvrdit vyřešený pohyb.**
+- Jak dál: uživatel si přeje postupovat **po jednom příkazu**, všechny chyby a opravy zapisovat do GitHub text docs. Stop pouze proces `alua run`, World a Bridge mohou běžet, pak pull Alua, pip install -e ., spustit AI; nepřepisovat ani nemažte SQLite / uložený svět. Sledujte `spatial_backtrack_fraction`, `longest_backtrack_streak`, unique perceptual places a skutečné splněné potřeby, nikoli jen `outcome_success_rate`. V případě dalšího kroužení zkontrolujte aliased place signatures a multi-ray blokování.
+
 ## AKTUÁLNÍ HANDOFF – ŽIVÁ TERMUX AKCEPTACE A PŘETRVÁVAJÍCÍ NAVIGAČNÍ SLABINA (2026-10-08, 11:10 CEST)
 
 - Android Luanti 5.17.0 World běží na portu 30000, lokální AluaBridge na 8787; po Bridge PR #10 a #11 je skutečný stav `/v1/world/observations = HTTP 202`, místo dřívějších 422. Na zařízení změněno `ALUABRIDGE_OBSERVATION_QUEUE` z 4 na 64, `ALUABRIDGE_REQUESTS_PER_MINUTE=1200`.
