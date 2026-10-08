@@ -1,5 +1,24 @@
 # Implementační deník Alua AI
 
+## 2026-10-08 – finální merge a validace Cognitive Core V5
+
+PR #10 byl sloučen do `main` jako commit `2da7e5c`.
+
+Finální CI na merge commitu:
+- 121 testů / 121 OK;
+- repository boundary audit: OK;
+- Termux E2E shell syntax: OK.
+
+Kontrola potvrdila, že V5 zachovává hlavní epistemické hranice:
+- žádné World XYZ v kognici;
+- žádné technické názvy node/item jako význam objektu;
+- žádný `target_ref` v dlouhodobé cognitive persistence;
+- prediction, causal hypothesis, risk i social testimony zůstávají opravitelné evidence modely;
+- fyzický outcome se stále učí až z budoucí observation, ne z ACK.
+
+Před prvním live field testem na telefonu je nutné stáhnout `main`, otevřít DB přes `alua status` a ověřit schema v5 a následně `alua cognition-status`.
+
+
 ## 2026-10-07 – Cognitive Core V5 po field testu slepé uličky
 
 Reálný běh ukázal zásadní omezení V2/V3/V4: lokální critic poznal nulový progress a uměl reorientovat, ale agent si nepamatoval, kudy do slepé větve přišel. Výsledkem bylo zmatené lokální rozhlížení místo smysluplného návratu.
