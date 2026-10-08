@@ -1,5 +1,10 @@
 # Paměť projektu Alua AI pro nový chat
 
+## AKTUÁLNÍ HANDOFF – SOUKROMÝ KOGNITIVNÍ LETOVÝ ZÁZNAMNÍK (2026-10-08)
+
+Na žádost vlastníka přidán příkaz `alua mind-log` pro velmi podrobnou diagnostiku mozku. `--follow` sleduje skutečně uložená rozhodnutí a další jejich fyzické výsledky, `--limit 200` omezuje sledované okno a `--output "$HOME/alua-mind.jsonl"` bezpečně přidává řádky do soukromého souboru 0600. Dle uložených dat vytváří `sensory_episode` (vjem), `cognitive_decision` (goal, action, rationale, `cognitive_state`, expectation a verified motor outcome) a `cognitive_model_snapshot`. Vše jsou skutečné persisted evidences, nikoli domýšlené vědomé myšlenky. Detail: `docs/COGNITIVE_FLIGHT_RECORDER.md`. World ani Bridge nesmějí získat nový API endpoint pro interní AI memory. Změna neovlivňuje samotné rozhodování agenta.
+
+
 ## MEZIREPO AUDIT – 2026-10-08 (současný stav)
 
 Související autoritativní audit všech tří součástí je v
