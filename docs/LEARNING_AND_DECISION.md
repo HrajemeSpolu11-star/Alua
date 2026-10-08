@@ -246,3 +246,55 @@ Když je uncertainty vysoká a safety/homeostasis dovolí, může `ExperimentPla
 
 Concept vzniká pouze ze společných evidence-backed relations více opaque appearances. Žádný technický název objektu se do abstraction vrstvy nepřenáší.
 
+
+
+## V5 – úplný outcome learning chain
+
+Po odeslání akce se žádný nový externí fakt neučí z ACK. Teprve budoucí motorický event korelovaný přes `source_sequence` uzavírá intervention cycle.
+
+Po resolved outcome se v pořadí aktualizují:
+
+1. PerceptualTopology transition;
+2. CognitiveCore prediction error;
+3. SelfModel capability evidence;
+4. RiskModel;
+5. CausalLearner;
+6. StrategyLearner, pokud expectation zná goal kind;
+7. SpatialMemory route/odometry/backtracking evidence;
+8. Metacognition progress/prediction error;
+9. Executive navigator + critic;
+10. původní belief learning;
+11. goal success/failure stats;
+12. reusable skill evidence.
+
+Toto pořadí zachovává rozdíl mezi:
+- transportním přijetím;
+- fyzickým výsledkem;
+- kognitivní interpretací výsledku.
+
+### Priorita rozhodování ve V5
+
+Goal arbitration je:
+
+1. reflexní survival goal;
+2. evidence-backed spatial backtrack;
+3. model-based deliberation při silné stagnaci;
+4. low-risk active experiment;
+5. běžné intrinsic/need goals rankované utility modelem;
+6. mission/drive bonusy pouze jako úprava score.
+
+Žádná vyšší vrstva nesmí obejít čerstvý percept, World physical constraints ani pending-expectation gate.
+
+### Co se učí kde
+
+- `beliefs`: opravitelné empirické vztahy;
+- `perceptual_transitions`: place + maneuver evidence;
+- `cognitive_records/predictive_model`: expected progress/success;
+- `cognitive_records/risk_model`: context-sensitive risk;
+- `cognitive_records/self_model`: vlastní capability;
+- `cognitive_records/causal_hypothesis`: intervention -> effect;
+- `cognitive_records/strategy_model`: weak transfer prior;
+- `cognitive_records/abstract_concept`: společné affordance abstractions;
+- `skills`: explicitně povolené procedural templates.
+
+Kompletní implementační sekvence: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
