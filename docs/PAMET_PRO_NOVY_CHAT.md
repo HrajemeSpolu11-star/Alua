@@ -1,5 +1,156 @@
 # Paměť projektu Alua AI pro nový chat
 
+## AKTUÁLNÍ HANDOFF PRO NOVÝ CHAT – 2026-10-08
+
+Toto je nejdůležitější souhrn současného stavu. Nový chat má pokračovat **odtud**, ne z historických sekcí níže.
+
+### Stav repozitáře Alua
+
+- Cognitive Core V5 je sloučený do `main`.
+- Merge V5: `2da7e5c` – `Cognitive Core V5: memory, prediction, metacognition and backtracking (#10)`.
+- Následná dokumentační/validační aktualizace je také v `main`; aktuální ověřený `main` při handoffu: `918aa6f` – `Document final Cognitive Core V5 validation (#11)`.
+- Finální validace: **121/121 testů OK**, `tools/audit_repo.py -> AUDIT OK`, Termux E2E shell syntax OK.
+- SQLite schema je **v5**. První otevření starší v4 DB udělá automatický pre-v5 backup.
+
+### Co jsme během poslední práce opravili
+
+1. **Look-loop / nekonečné rozhlížení**
+   - `scan_recovery`, `scan_obstacle` a `scan_periodic` už nemohou řetězit nekonečné `look`;
+   - po scanu musí přijít jiný fyzický pokus;
+   - scan direction není jednoduchý parity oscilátor;
+   - staré failures samy o sobě už neudržují recovery.
+
+2. **Stale `target_ref`**
+   - `409 target_expired` už neshodí runtime;
+   - stale decision se označí jako `stale_target`;
+   - nevytvoří falešný goal outcome ani expectation;
+   - vizuální percept zůstává použitelný i bez čerstvého `target_ref`.
+
+3. **Falešný pohybový úspěch / one-block bounce**
+   - motor success už není jen binární ACK;
+   - Alua používá `progress_signal` a `slip_signal`;
+   - skutečný move success vyžaduje alespoň cca 55 % zamýšleného directional progressu;
+   - `partial_effect` není success;
+   - LocalNavigator penalizuje manévry podle skutečné kvality pohybu;
+   - BehaviorCritic rozlišuje dlouhou normální chůzi od low-progress stagnace;
+   - escape plan umí fyzicky reorientovat yaw;
+   - ve Worldu byl opraven i zrcadlený left/right vision basis proti locomotion basis.
+
+4. **Slepá ulička**
+   - původní V2/V3 uměl poznat problém, ale neuměl se vrátit;
+   - V5 přidává vlastní route memory, dead-end evidence, remembered-route backtracking a relativní odometrii;
+   - agent při stagnaci může hledat poslední zapamatovaný route edge a vrátit se vlastní cestou místo zmateného lokálního rozhlížení.
+
+5. **Paměť a učení**
+   - beliefs mají provenance;
+   - perceptuální místa a přechody se persistují;
+   - object permanence drží objekt v paměti i po krátkém zmizení ze zorného pole;
+   - staré beliefs pomalu decayují místo toho, aby byly navždy absolutní;
+   - vznikají bounded episodic summaries;
+   - koncepty se tvoří jen z vlastní evidence.
+
+### Co Cognitive Core V5 nyní obsahuje
+
+- `attention.py`: salience, surprise, uncertainty;
+- `scene.py` + `temporal.py`: multisenzorová scéna a recurrence;
+- `object_memory.py`: object permanence;
+- `spatial_memory.py`: route stack, dead-end detection, remembered backtracking, relative X/Z + heading + uncertainty;
+- `predictive.py`: action prediction a prediction error;
+- bounded counterfactual deliberation: forward / left / right / back;
+- `risk.py`: context-sensitive learned risk;
+- `self_model.py`: zkušenost s vlastními capabilities;
+- `causal.py`: intervention-based causal hypotheses;
+- `metacognition.py`: stagnation, loop risk, uncertainty, model error;
+- `drives.py`: safety, homeostasis, curiosity, frustration, exploration;
+- `experiments.py`: bezpečné aktivní experimenty;
+- `prospective.py`: „až nastane X, udělej/připomeň Y“;
+- `missions.py`: persistentní přerušitelné dlouhodobější cíle;
+- `consolidation.py`: summaries, forgetting/decay, concept consolidation;
+- `concepts.py`: evidence-based abstraction;
+- `strategy.py`: transferable strategy/meta-learning prior;
+- `social.py` + peer-model hooks: připravené, ale bez explicitních social sensory dat z Worldu zatím nemají řídit sociální chování;
+- `cognition.py`: orchestrátor celé vyšší vrstvy;
+- decision rationale obsahuje `cognitive_state`, takže lze zpětně zjistit, proč agent něco udělal.
+
+### Co už měl agent z Embodied Needs V4 před V5
+
+AI-side rozhodování už umí pracovat s:
+- health;
+- stamina/výdrží;
+- hunger;
+- thirst;
+- fatigue;
+- breath;
+- vlastním inventářem;
+- pickup/consume/drink/break pouze když to vychází z potřeby/cíle a dostupné evidence;
+- terrain locomotion podle signálů těla: walk, sprint, crouch, crawl, jump, vault, climb, swim, controlled drop.
+
+Důležité: World vlastní fyzickou pravdu a capability. AI se neučí z ACK, ale až z budoucího sensory outcome.
+
+### Neměnné epistemické hranice
+
+Alua **nemá a nesmí mít**:
+- absolutní World XYZ jako tajnou mapu;
+- technické názvy node/item jako hotový význam;
+- skryté recepty;
+- privilegovanou globální mapu;
+- dlouhodobý `target_ref`;
+- falešný „success“ pouze z HTTP ACK.
+
+Význam věcí, riziko, užitečnost i schopnosti se mají tvořit z vlastní zkušenosti.
+
+### Tři repozitáře
+
+- **AluaWorld** = fyzika, tělo, smysly, materiály a skutečné následky;
+- **AluaBridge** = transport/session/target handles;
+- **Alua** = mozek, paměť, cíle, plánování, predikce a učení.
+
+Cognitive Core V5 měnil primárně **Alua**. World se má dolaďovat podle toho, jaké chybějící sensory/action signály AI při field testu skutečně potřebuje.
+
+### Co má nový chat udělat jako první
+
+Na telefonu aktualizovat Alua z `main`, potom:
+
+```bash
+cd "$HOME/alua/Alua"
+git pull --ff-only
+git rev-parse --short HEAD
+
+set -a
+. ./.env
+set +a
+
+.venv/bin/python -m alua status
+.venv/bin/python -m alua cognition-status
+```
+
+Očekávání:
+- HEAD má odpovídat aktuálnímu `main`;
+- `schema_version = 5`;
+- stará DB se zachová a při migraci má vzniknout backup.
+
+Pak spustit World + Bridge + AI a udělat nový field test. Tentokrát sledovat hlavně:
+- zda při slepé uličce vznikne `spatial_backtrack`;
+- zda agent skutečně vrací route, ne jen náhodně kouká;
+- `metacognition.recommended_mode`;
+- `stagnation`, `loop_risk`, `prediction_surprise`;
+- route depth / relative pose;
+- learned prediction/risk/self/causal/strategy records;
+- zda dlouhá kvalitní chůze není falešně označena jako stagnace.
+
+Po několika minutách:
+
+```bash
+.venv/bin/python -m alua evaluate --limit 2000
+.venv/bin/python -m alua benchmark --limit 2000
+.venv/bin/python -m alua cognition-status
+```
+
+### Nejbližší technický cíl
+
+Nezačínat dalším velkým přepisem. Nejprve **živě ověřit V5**. Pokud se agent znovu zasekne, nový chat má analyzovat konkrétní `cognitive_state`, route memory, metacognition a motor outcomes a opravit příčinu. World se má měnit až podle prokázané chybějící fyzické/senzorické informace, ne preventivně.
+
+
 ## Finální validace Cognitive Core V5 – 2026-10-08
 
 Cognitive Core V5 je sloučený do `main`.
