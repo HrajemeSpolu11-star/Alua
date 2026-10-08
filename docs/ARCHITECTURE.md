@@ -338,3 +338,6 @@ Hlavní behaviorální změna: stagnace a slepé větve už nemusí být řešen
 Persistentní vyšší kognice je uložená v schema v5 přes namespaced `cognitive_records`.
 
 Autoritativní popis: `docs/COGNITIVE_CORE_V5.md`.
+
+
+Kompletní kroková implementační stopa: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
