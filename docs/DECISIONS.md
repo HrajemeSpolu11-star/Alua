@@ -183,3 +183,32 @@ Přijato 2026-10-07.
 
 Mission je perzistentní záměr vyšší úrovně, nikoli fixní motorická sekvence. Safety a homeostasis ji mohou suspendovat. Po každém motorickém kroku zůstává povinný fresh-perception replan.
 
+
+
+## ADR-A034 – Aktivní experiment nesmí fragmentovat goal evidence
+
+Přijato 2026-10-08.
+
+ExperimentPlanner může změnit důvod, proč byl zvolen `inspect_object`, ale nesmí pro stejný fyzický záměr vytvářet paralelní goal namespace. Touch experiment proto používá kanonický key `inspect:<appearance>`.
+
+Důvod: goal success/failure evidence, skill learning a regression testy musí zůstat spojeny s jedním významem cíle. Tento invariant byl potvrzen CI regresí během PR #10.
+
+## ADR-A035 – Scene signature není fyzická lokace
+
+Přijato 2026-10-08.
+
+`SceneIntegrator` smí sloučit více sensory modalit do interní scene signature. Scene signature je kontext pro pozornost, temporal recurrence a learning; nesmí být interpretována jako absolutní pozice ani jako unikátní objekt Worldu.
+
+## ADR-A036 – Strategy transfer je slabší prior než context-specific evidence
+
+Přijato 2026-10-08.
+
+`StrategyLearner` může přenášet zkušenost mezi podobnými goal/action patterns, ale jeho score je pouze bounded bonus. Čerstvá sensory evidence, risk, context-specific prediction a safety/homeostasis mají vyšší autoritu.
+
+## ADR-A037 – Social cognition je inertní bez explicitního sensory kontraktu
+
+Přijato 2026-10-08.
+
+Alua nesmí z běžného visual appearance sama usoudit, že jde o jiného agenta. Social trust, testimony a peer behavior model se smějí aktivovat pouze z explicitního social sensory kanálu vlastněného Worldem.
+
+Kompletní implementační stopa V5: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
