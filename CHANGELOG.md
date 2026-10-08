@@ -1,5 +1,13 @@
 # Přehled změn
 
+## 2026-10-08 – živá akceptace transportu, navigační benchmark a oprava hledání potřeb (PR #15)
+
+- Na Android Termux potvrzen skutečný World→Bridge přenos po Bridge PR #10/#11: World byl připojen, Bridge přijímal `POST /v1/world/observations` s HTTP 202 a `alua doctor` ukazoval `last_observation_sequence=900`. Následný běh mozku prokazatelně vytvořil vlastní rozhodnutí a fyzické motorické výsledky.
+- Z původního `alua benchmark --limit 500`: 226 rozhodnutí (224× move, 1× interact, 1× manipulate), 175 cílů hledání vody, 225 vyhodnocených motorických výsledků, 86 úspěchů / 139 neúspěchů (38,22 %), 138 low-progress pohybů a 59,6 % vizuálních vjemů se zablokovaným směrem vpřed. Akceptace `passed=false` kvůli stereotypii a stagnaci. Jde o **výchozí živé měření**, ne výsledek opravy.
+- Identifikováno obcházení naučené navigace při `satisfy_thirst/satisfy_hunger` s `phase=search`: původní `_search_move()` trvale zadával jednoduchý krok vpřed.
+- PR #15: hledání zdroje bez reálného `target_ref` nyní používá fyzickými vjemy řízený `explore_frontier`, `bypass_obstacle` či `escape_stagnation`; po skutečném nalezení zdroje zůstává interakce přes `satisfy_body_need`. Přidány 3 regresní testy; GitHub CI prošlo. Účinnost v terénu **čeká na opakovaný benchmark**, není prohlášena za potvrzenou.
+- Kompletní popis incidentu, důkazů, implementace, výsledků a bezpečné instalace: `docs/INCIDENT_2026-10-08_NEED_SEARCH_STAGNATION.md`. Neodstraňovat žádné SQLite DB ani existující World.
+
 ## 2026-10-08 – podrobný lokální Cognitive V5 mind-log
 
 - Přidán operátorský příkaz `python -m alua mind-log --limit 200 --follow --output "$HOME/alua-mind.jsonl"`. Neotevírá žádné nové HTTP API.
