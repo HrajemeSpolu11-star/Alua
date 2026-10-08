@@ -8,6 +8,7 @@ from .memory import WorkingMemory
 from .navigation import LocalNavigator
 from .perception import PerceptionFrame
 from .planning import BehaviorPlan, BoundedPlanner
+from .perception_helpers import locomotion_signals
 from .policy import ActionIntent, ExplorationPolicy
 from .world_model import EgocentricWorldModel
 
@@ -131,7 +132,39 @@ class ExecutiveController:
         step = plan.steps[self.step_index]
         critique = self.critic.assess()
 
-        if step.kind in {
+        # A real, current, body-observed one-block step is climbable with a
+        # physical vault. Do not let model-only "front blocked" bypass routing
+        # suppress that affordance during ordinary frontier or need search.
+        # The self-critic stops repeating vault if actual motor outcomes fail.
+        locomotion = locomotion_signals(frame)
+        step_observed = (
+            float(locomotion.get("step_up_signal", 0.0)) >= 0.5
+            and float(locomotion.get("grounded_signal", 0.0)) >= 0.5
+            and float(locomotion.get("overhead_blocked_signal", 0.0)) < 0.5
+        )
+        needs_search = (
+            goal.kind in {"satisfy_thirst", "satisfy_hunger"}
+            and isinstance(goal.reason, dict)
+            and goal.reason.get("phase") == "search"
+            and not goal.target_ref
+        )
+        if (
+            step_observed
+            and not critique.force_replan
+            and step.kind in {"navigate_frontier", "navigate_lateral"}
+            and (goal.kind == "explore" or needs_search)
+        ):
+            special = self.fallback_policy.terrain_intent(frame, goal, memory)
+            if special is not None and special.rationale.get("policy") == "embodied_vault":
+                intent = special
+            else:
+                intent = None
+        else:
+            intent = None
+
+        if intent is not None:
+            pass
+        elif step.kind in {
             "retreat",
             "inspect",
             "scan",
