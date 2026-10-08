@@ -172,3 +172,38 @@ Po bounded intervalu:
 
 Cílem je dlouhodobá paměť bez nutnosti držet každý raw frame jako stejně významný.
 
+
+
+### Session-local vs. persistentní V5 stav
+
+Session-local:
+- current attention history;
+- route stack;
+- relative heading/odometry;
+- metacognitive short windows;
+- pending CognitiveCore action/context;
+- active perceptual target handles.
+
+Persistentní:
+- object concepts;
+- spatial place/transition evidence;
+- prediction/risk/self/causal/strategy records;
+- temporal patterns;
+- missions;
+- prospective intents;
+- abstract concepts;
+- episodic summaries;
+- poslední cognitive snapshot.
+
+Při změně Bridge session se session-local motorický kontext resetuje. Dlouhodobá evidence zůstává, ale nesmí obsahovat starý `target_ref`.
+
+### Schema v5 migration invariant
+
+Forward migrace:
+- před změnou vytvoří backup;
+- nesmí mazat legacy episodes/beliefs/goals/skills;
+- nesmí retroaktivně vymýšlet evidence;
+- nový `cognitive_records` store začíná prázdný, pokud stará DB taková data neměla;
+- nový runtime si vyšší modely znovu buduje pouze z budoucích zkušeností.
+
+Detailní krokový audit: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
