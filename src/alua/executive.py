@@ -8,7 +8,7 @@ from .memory import WorkingMemory
 from .navigation import LocalNavigator
 from .perception import PerceptionFrame
 from .planning import BehaviorPlan, BoundedPlanner
-from .perception_helpers import locomotion_signals
+from .embodiment import locomotion_signals
 from .policy import ActionIntent, ExplorationPolicy
 from .world_model import EgocentricWorldModel
 
