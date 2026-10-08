@@ -75,7 +75,7 @@ Počet cyklů lze změnit přes ALUA_E2E_CYCLES.
 
 ## SQLite migrace
 
-Historický text této fáze uváděl schema v2. Aktuální kognitivní schema je v3; migrace v1 i v2 před změnou vytváří lokální backup. Novější neznámé schema runtime odmítne.
+Aktuální kognitivní schema je v5. Store podporuje forward migraci starších podporovaných schémat a před změnou vytvoří lokální backup. Pro přechod z v4 vznikne soubor `<db>.pre-v5-YYYYMMDD-HHMMSS.bak`. Staré episodes, beliefs, goals, skills a perceptual evidence se nemažou. Novější neznámé schema runtime odmítne.
 
 ## Testy
 
@@ -111,31 +111,9 @@ Pro delší vzorek:
 
 Po nasazení V2 se doporučuje nejprve několik minut normálně nechat Alua autonomně běžet a potom report zkontrolovat. `look_loop_detected=true` nebo `action_stereotype_detected=true` je důvod otevřít decision rationale a neřešit problém pouze vizuálním pozorováním entity.
 
-## Aktualizace na SQLite schema v4
+## Historická migrace do schema v4
 
-Po aktualizaci Alua není potřeba mazat kognitivní DB.
-
-První start příkazu, který otevře Store, provede migraci a vytvoří soubor ve tvaru:
-
-```text
-alua.sqlite3.pre-v4-YYYYMMDD-HHMMSS.bak
-```
-
-Potom lze ověřit:
-
-```bash
-.venv/bin/python -m alua status
-```
-
-Očekávané `schema_version` je `4`.
-
-Po několika minutách live běhu:
-
-```bash
-.venv/bin/python -m alua benchmark --limit 2000
-```
-
-Benchmark nevyžaduje běžící Bridge ani World; čte vlastní SQLite Alua.
+V4 zavedla belief provenance a perceptual topology. Tento krok je dnes historický; aktuální cíl deploymentu je schema v5. Staré pre-v4 backupy se nemažou, pokud jsou potřeba pro audit.
 
 
 ## Cognitive Core V5 – aktualizace a diagnostika
@@ -170,3 +148,61 @@ Po field běhu:
 
 Při prvním V5 testu nemažte starou DB. Migrace je navržena tak, aby episodes, beliefs, goals a skills zachovala.
 
+
+
+### Přesný V5 deployment krok za krokem
+
+1. Zastavit pouze proces Alua AI. World a Bridge lze ponechat běžet, pokud jsou zdravé.
+2. Aktualizovat repo:
+
+```bash
+cd "$HOME/alua/Alua"
+git pull --ff-only
+git rev-parse --short HEAD
+```
+
+3. Načíst prostředí:
+
+```bash
+set -a
+. ./.env
+set +a
+```
+
+4. Otevřít Store a provést migraci:
+
+```bash
+.venv/bin/python -m alua status
+```
+
+Očekávat `schema_version: 5`. Pokud existovala v4 DB, musí vedle ní vzniknout pre-v5 backup.
+
+5. Zkontrolovat vyšší kognitivní persistence:
+
+```bash
+.venv/bin/python -m alua cognition-status
+```
+
+6. Ověřit Bridge/World session:
+
+```bash
+.venv/bin/python -m alua doctor
+```
+
+7. Spustit AI:
+
+```bash
+.venv/bin/python -m alua run
+```
+
+8. Po field běhu v jiné Termux session zkontrolovat:
+
+```bash
+.venv/bin/python -m alua cognition-status
+.venv/bin/python -m alua evaluate --limit 2000
+.venv/bin/python -m alua benchmark --limit 2000
+```
+
+9. Při regresi nemažte DB. Uchovat current DB, pre-v5 backup, cognition-status, evaluate a benchmark výstup a opravit problém regression testem.
+
+Kompletní implementační audit: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
