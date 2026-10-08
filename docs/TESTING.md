@@ -231,3 +231,30 @@ Merge commit `2da7e5c` prošel finálním GitHub Actions během:
 - `bash -n tools/e2e_smoke_termux.sh`: OK.
 
 Tento stav je referenční baseline před prvním delším live field testem Cognitive Core V5.
+
+
+### V5 CI regresní incident
+
+Během vývoje active experiments původně vracely `experiment:touch:pabc`. Dva existující runtime testy správně očekávaly kanonický `inspect:pabc` a selhaly.
+
+Opravena byla implementace:
+- experiment zůstává nový selector/reason;
+- goal key zůstává `inspect:<appearance>`;
+- goal statistics a skill evidence se nerozdělují.
+
+Testy nebyly oslabeny.
+
+### Povinné V5 field evidence při reportu chyby
+
+Uchovat:
+- přesný Alua commit;
+- `alua status`;
+- `alua cognition-status`;
+- `alua evaluate --limit 2000`;
+- `alua benchmark --limit 2000`;
+- relevantní World motor/action log;
+- Bridge log pro transportní korelaci;
+- informaci o pre-v5 backupu;
+- screenshot chování pouze jako doplněk.
+
+Kompletní rollback a Definition of Done: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
