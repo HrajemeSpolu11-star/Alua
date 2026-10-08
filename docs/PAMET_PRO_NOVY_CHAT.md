@@ -147,22 +147,57 @@ Aktuální mozek:
 - je samostatná Python aplikace;
 - používá pouze AluaBridge Agent API.
 
-## Stav Alua
+## Stav Alua – aktuální k 2026-10-08
 
-Existuje:
-- Python runtime;
-- BridgeClient;
+Aktuální AI branch pro Cognitive Core V5:
+- `feat/cognitive-core-v5-20261007`;
+- PR #10 `Cognitive Core V5`;
+- schema v5;
+- před migrací starší DB vzniká automatický pre-v5 backup.
+
+Aktuální kognitivní stack:
+- Python runtime + BridgeClient;
 - strict schema/perception boundary;
-- SQLite schema v3;
-- automatický backup při migraci v1/v2 -> v3;
-- episodes, appearance_stats, decisions, expectations, beliefs a session_events;
-- WorkingMemory max 32 frame;
-- session recovery;
-- motor outcome attribution;
-- evidence-based confidence;
-- aktivní ExplorationPolicy;
-- testy a CI;
-- E2E Termux smoke helper.
+- WorkingMemory;
+- episodes, expectations, beliefs, goals a skills;
+- Cognitive Architecture V2;
+- Adaptive Cognition V3;
+- Embodied Needs V4;
+- Cognitive Core V5.
+
+Cognitive Core V5 obsahuje:
+- attention/surprise;
+- multisensory scene integration;
+- object permanence;
+- temporal recurrence;
+- route memory;
+- relative odometry s uncertainty;
+- dead-end detection a remembered-route backtracking;
+- predictive action model;
+- bounded counterfactual deliberation;
+- learned context-sensitive risk;
+- empirical self model;
+- interventional causal hypotheses;
+- metacognition;
+- regulatory drives;
+- active low-risk experiments;
+- prospective memory;
+- persistent interruptible missions;
+- concept formation;
+- strategy transfer/meta-learning;
+- bounded consolidation a confidence decay;
+- social/testimony/peer hooks pro budoucí explicitní social sensory data;
+- `alua cognition-status`;
+- vysvětlitelný `cognitive_state` v decision rationale.
+
+Nejdůležitější behaviorální změna V5:
+pokud Alua rozezná, že se dostala do slepé větve a má vlastní route history, má preferovat návrat k předchozímu známému perceptual place před náhodným look/escape chováním.
+
+Autoritativní dokumenty:
+- `docs/COGNITIVE_CORE_V5.md`;
+- `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`;
+- `docs/TESTING.md`;
+- `docs/OPERATIONS_TERMUX.md`.
 
 ## Embodied V1
 
@@ -180,7 +215,7 @@ Policy:
 - periodický scan;
 - jinak pomalý move.
 
-Automatický pickup/push/break je vypnutý.
+Embodied Needs V4 už umožňuje bounded pickup/break podle potřeby a evidence; nejde o plošně automatické destruktivní chování.
 
 ## target_ref
 
@@ -219,14 +254,17 @@ Po spuštění Worldu a Bridge:
 
 ## Bezprostřední další práce
 
-1. audit skutečného rozhodování za běhu – zejména dlouhé série `look`;
-2. vypsat a analyzovat current goals, beliefs a reusable skills;
-3. ověřit, zda reusable skills skutečně mění budoucí volbu akcí;
-4. restart/recovery a delší soak test všech tří procesů;
-5. metabolismus/needs ve Worldu;
-6. goal/utility a risk learning v Alua;
-7. multi-step planner;
-8. až potom destruktivnější autonomní manipulace.
+1. dokončit/merge PR #10 až po green CI na finálním HEAD;
+2. na Termuxu pullnout aktuální Alua a otevřít Store, čímž proběhne migrace do schema v5;
+3. ověřit `alua status`, `alua cognition-status` a `alua doctor`;
+4. spustit AI ve skutečném světě;
+5. připravit situaci se slepou větví a ověřit `spatial_backtrack`;
+6. zkontrolovat, že route return nevytváří nový look loop;
+7. ověřit prediction/risk/self/causal/strategy records z reálných outcomes;
+8. po delším běhu spustit `evaluate --limit 2000` a `benchmark --limit 2000`;
+9. provést delší soak/restart test a měřit CPU/RAM/DB růst;
+10. teprve podle field evidence upravovat thresholdy nebo doplňovat World sensory/action kontrakty;
+11. social/multi-agent chování aktivovat až po explicitních World social signálech.
 
 ## Oprava CI 2026-10-06
 
@@ -240,6 +278,6 @@ Aktivní ověřování nejistých zkušeností mělo konflikt priorit: `scan_obs
 - volba je v `parameters.effector` a v decision rationale;
 - Bridge efektor pouze přenáší, World ověřuje jeho existenci, obsazenost, sílu a dosah;
 - ACK stále není fyzický výsledek;
-- autonomní pickup/push/break zůstává vypnutý;
+- pickup/break se používají pouze přes need-driven a evidence-gated policy;
 - chybějící tělo `alua:1` nově vytvoří první tester automaticky, ale samostatný Python proces Alua se musí stále spustit zvlášť;
 - panel Worldu rozlišuje tělo, Bridge session a nedávnou skutečnou aktivitu tohoto procesu.
