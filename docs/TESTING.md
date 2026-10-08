@@ -220,3 +220,14 @@ Field acceptance V5:
 - schema migration zachová starší dlouhodobou paměť;
 - benchmark nesmí regresovat staré anti-loop invarianty.
 
+
+### Finální V5 CI baseline
+
+Merge commit `2da7e5c` prošel finálním GitHub Actions během:
+
+- `python -m compileall -q src tests tools`;
+- `python -m unittest discover -s tests -v`: **121 testů, OK**;
+- `python tools/audit_repo.py`: **AUDIT OK**;
+- `bash -n tools/e2e_smoke_termux.sh`: OK.
+
+Tento stav je referenční baseline před prvním delším live field testem Cognitive Core V5.
