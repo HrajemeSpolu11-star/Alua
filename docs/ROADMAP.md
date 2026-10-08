@@ -81,11 +81,16 @@ Hotovo navíc:
 - belief evidence provenance;
 - offline sensory replay + acceptance benchmark.
 
+Stav po Embodied Needs V4 a Cognitive Core V5:
+- fyzické needs/metabolismus jsou zapojené;
+- kontextový risk model je implementovaný a učí se z outcome evidence;
+- inventory/pickup a need-driven resource acquisition jsou zapojené bounded policy;
+- dead-end backtracking, prediction, self-model a metakognice jsou implementované.
+
 Zbývá:
-- fyzické needs z metabolismu;
-- explicitní harm/risk model pro jednotlivé manipulace;
-- explicitní preconditions pro naučené composite skills;
-- potom autonomní pickup/push/break.
+- explicitní preconditions pro automaticky indukované composite skills;
+- širší risk evidence pro složitější tool-use/manipulace;
+- dlouhý field/soak acceptance místo dalšího hardcoded rozšiřování.
 
 ## Fáze F – end-to-end AluaWorld
 
@@ -118,8 +123,14 @@ Hotovo:
 Zbývá:
 - automatická indukce composite skillů z úspěšných trajectories;
 - explicitní preconditions;
-- generalizace;
-- risk a utility learning.
+- bezpečná generalizace composite postupů.
+
+Hotovo od V3/V5:
+- adaptive utility;
+- context-sensitive risk;
+- prediction;
+- strategy transfer/meta-learning;
+- concept formation.
 
 ## Fáze H – jazyk a sociální chování
 
@@ -177,3 +188,8 @@ Dlouhodobě otevřené:
 - multi-agent supervisor/population;
 - volitelná high-level language/reasoning vrstva, která nikdy nebude přímo řídit motoriku.
 
+
+
+Autoritativní V5 postup:
+- `docs/COGNITIVE_CORE_V5.md`;
+- `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
