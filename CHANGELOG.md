@@ -1,5 +1,15 @@
 # Přehled změn
 
+## 2026-10-08 – kompletní dokumentační audit Cognitive Core V5
+
+- přidán `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md` jako úplný krokový audit od field problému přes návrh, schema v5, všechny nové moduly, runtime integraci, CI regresi, deployment, rollback a Definition of Done;
+- synchronizovány README, architektura, ADR, memory model, learning/decision, roadmap, testing, Termux operations, implementační deník a handoff pro nový chat;
+- explicitně zdokumentováno, které části V5 jsou session-local a které persistentní;
+- zdokumentováno přesné pořadí outcome learningu a goal arbitration;
+- zdokumentován CI incident s fragmentací `inspect` goal key a důvod, proč byla opravena implementace místo oslabení testu;
+- historické schema v3/v4 provozní instrukce byly označeny jako historické a aktuální deployment směřuje na schema v5;
+- live field acceptance zůstává oddělena od CI: green testy samy o sobě nepotvrzují skutečný návrat ze slepé větve.
+
 ## 2026-10-07 – Cognitive Core V5
 
 - field test slepé uličky ukázal, že lokální obstacle recovery nestačí: agent potřebuje vlastní route memory a explicitní návrat;
