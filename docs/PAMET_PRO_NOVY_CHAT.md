@@ -2,6 +2,14 @@
 
 ## AKTUÁLNÍ HANDOFF PRO NOVÝ CHAT – 2026-10-08
 
+### Úplný krokový postup V5
+
+Pro rekonstrukci celé práce nepoužívat jen tento handoff. Autoritativní podrobný postup je:
+- `docs/COGNITIVE_CORE_V5.md` – architektonický kontrakt;
+- `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md` – úplný krok za krokem audit implementace, CI, deploymentu, rollbacku a acceptance.
+
+Historické sekce níže mohou obsahovat starší stav schema/policy a nesmí přebít aktuální handoff nahoře.
+
 Toto je nejdůležitější souhrn současného stavu. Nový chat má pokračovat **odtud**, ne z historických sekcí níže.
 
 ### Stav repozitáře Alua

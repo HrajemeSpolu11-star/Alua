@@ -1,5 +1,27 @@
 # Implementační deník Alua AI
 
+## 2026-10-08 – kompletní krokový audit V5 dokumentace
+
+Po finálním merge V5 byl vytvořen samostatný úplný technický deník:
+`docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
+
+Ten zachycuje celý postup:
+- výchozí field problém;
+- zachované epistemické hranice;
+- migraci schema v4 -> v5;
+- implementaci každého nového cognitive modulu;
+- přesnou runtime integraci observation -> goal -> action -> future outcome -> learning;
+- planner/policy změny;
+- CLI;
+- nové testy;
+- CI regresi a její opravu;
+- deployment na Termux;
+- field acceptance;
+- rollback;
+- Definition of Done.
+
+Tento obecný `IMPLEMENTATION_LOG_AI.md` zůstává chronologickým deníkem celého projektu; nový V5 log je detailní audit konkrétní velké změny.
+
 ## 2026-10-08 – finální merge a validace Cognitive Core V5
 
 PR #10 byl sloučen do `main` jako commit `2da7e5c`.

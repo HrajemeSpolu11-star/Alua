@@ -422,3 +422,26 @@ Ukazuje:
 - počty cognitive recordů podle typu;
 - aktivní missions;
 - poslední metacognitive/cognitive snapshot.
+
+
+## 25. Kompletní implementační audit
+
+Tento dokument popisuje cílovou architekturu a kontrakty V5. Úplný chronologický postup implementace včetně:
+- motivace z field testu;
+- změny schema;
+- soubor po souboru implementace;
+- runtime lifecycle;
+- regression testů;
+- CI incidentu a jeho opravy;
+- deploymentu na Termux;
+- rollbacku;
+- field acceptance;
+- Definition of Done
+
+je v `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
+
+Při rozporu:
+- `COGNITIVE_CORE_V5.md` určuje architektonický kontrakt;
+- `COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md` určuje auditní historii postupu;
+- `PAMET_PRO_NOVY_CHAT.md` určuje aktuální handoff;
+- skutečný `main` kód a green CI jsou technická autorita.

@@ -306,3 +306,6 @@ PerceptionFrame
 - contextual terrain/motor zkušenost se nesmí promovat do univerzálního skillu bez preconditions.
 
 Autoritativní detail: `docs/COGNITIVE_CORE_V5.md`.
+
+
+Kompletní kroková implementační stopa: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.

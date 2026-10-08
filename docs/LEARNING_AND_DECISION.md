@@ -246,3 +246,40 @@ Když je uncertainty vysoká a safety/homeostasis dovolí, může `ExperimentPla
 
 Concept vzniká pouze ze společných evidence-backed relations více opaque appearances. Žádný technický název objektu se do abstraction vrstvy nepřenáší.
 
+
+
+## V5 – úplný outcome learning chain
+
+ACK nikdy není world outcome. Až budoucí motor event korelovaný přes `source_sequence` uzavírá intervention cycle.
+
+Po resolved outcome se aktualizují:
+1. PerceptualTopology transition;
+2. PredictiveModel a prediction error;
+3. SelfModel capability evidence;
+4. RiskModel;
+5. CausalLearner;
+6. StrategyLearner, pokud expectation zná goal kind;
+7. SpatialMemory route/odometry/backtracking evidence;
+8. Metacognition progress/prediction error;
+9. Executive navigator + critic;
+10. původní belief learning;
+11. goal success/failure stats;
+12. reusable skill evidence.
+
+Tím se drží oddělené:
+- přijetí požadavku;
+- fyzický následek;
+- kognitivní interpretace.
+
+### V5 priorita goal arbitration
+
+1. reflexní survival goal;
+2. evidence-backed `spatial_backtrack`;
+3. `deliberate_navigation` při silné stagnaci/model error;
+4. low-risk active experiment;
+5. standardní intrinsic/need goals rankované utility modelem;
+6. mission/drive bonusy pouze jako úprava score.
+
+Vyšší cognition nikdy neobchází fresh perception, pending-expectation gate ani World physical constraints.
+
+Kompletní postup: `docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
