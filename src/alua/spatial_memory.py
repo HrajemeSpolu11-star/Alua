@@ -69,6 +69,8 @@ class SpatialMemory:
         self._pending_origin: str | None = None
         self._pending_heading: float = 0.0
         self._backtracking = False
+        self._backtrack_attempts = 0
+        self._backtrack_attempt_limit = 8
 
     def reset_session(self) -> None:
         self.heading_rad = 0.0
@@ -83,6 +85,7 @@ class SpatialMemory:
         self._pending_origin = None
         self._pending_heading = 0.0
         self._backtracking = False
+        self._backtrack_attempts = 0
 
     def observe(
         self,
@@ -132,6 +135,7 @@ class SpatialMemory:
         *,
         store: Store | None = None,
         agent_id: str | None = None,
+        goal_kind: str | None = None,
     ) -> None:
         parameters = action.get("parameters")
         parameters = parameters if isinstance(parameters, dict) else {}
@@ -147,6 +151,11 @@ class SpatialMemory:
         if action.get("type") == "move":
             origin = self._pending_origin
             maneuver = LocalNavigator.maneuver_from_parameters(parameters)
+            returning = goal_kind == "spatial_backtrack" and self._backtracking and bool(self._route)
+            if returning:
+                # A motor success is NOT proof that the previous perceptual
+                # place was reached. Backtracking may span several steps.
+                self._backtrack_attempts += 1
             if origin is not None and supported and quality >= 0.55:
                 self._failed_moves[origin] = max(
                     0,
@@ -173,7 +182,15 @@ class SpatialMemory:
                         1.0,
                         self.pose_uncertainty + 0.015 + 0.04 * (1.0 - quality),
                     )
-                if destination != origin:
+                if returning:
+                    # Never turn an unfinished return step into a new outward
+                    # route: that creates A->B->A ping-pong on aliased views.
+                    if self._route and destination == self._route[-1].origin:
+                        self._route.pop()
+                        self._backtracking = False
+                        self._backtrack_attempts = 0
+                        self.pose_uncertainty = max(0.04, self.pose_uncertainty * 0.72)
+                elif destination != origin:
                     if (
                         self._route
                         and self._route[-1].origin == destination
@@ -181,6 +198,7 @@ class SpatialMemory:
                     ):
                         self._route.pop()
                         self._backtracking = False
+                        self._backtrack_attempts = 0
                         # Recognizing a previously visited perceptual place is
                         # a weak loop-closure event and reduces odometry drift.
                         self.pose_uncertainty = max(0.04, self.pose_uncertainty * 0.72)
@@ -280,9 +298,19 @@ class SpatialMemory:
         force: bool = False,
     ) -> SpatialDirective | None:
         if not self._route or self.current_place is None:
+            self._backtracking = False
+            self._backtrack_attempts = 0
             return None
         step = self._route[-1]
-        if step.destination != self.current_place:
+        if step.destination != self.current_place and not self._backtracking:
+            return None
+        if self._backtracking and self._backtrack_attempts >= self._backtrack_attempt_limit:
+            # Eight verified attempts without recognizing the remembered
+            # predecessor invalidate this route edge, NOT its World position.
+            # Forget unreliable route evidence instead of replaying it forever.
+            self._route.pop()
+            self._backtracking = False
+            self._backtrack_attempts = 0
             return None
 
         score = self.dead_end_score(model, revisit_ratio)
@@ -347,6 +375,7 @@ class SpatialMemory:
             },
             "route_depth": len(self._route),
             "backtracking": self._backtracking,
+            "backtrack_attempts": self._backtrack_attempts,
             "failed_moves_here": self._failed_moves.get(
                 self.current_place or "",
                 0,
