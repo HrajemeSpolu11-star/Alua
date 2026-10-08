@@ -87,19 +87,19 @@ class SkillGraph:
             ),
             "explore_frontier": SkillDefinition(
                 "explore_frontier",
-                frozenset({"explore"}),
+                frozenset({"explore", "satisfy_thirst", "satisfy_hunger"}),
                 ("navigate_frontier",),
                 "move toward the best currently perceived local frontier",
             ),
             "bypass_obstacle": SkillDefinition(
                 "bypass_obstacle",
-                frozenset({"explore"}),
+                frozenset({"explore", "satisfy_thirst", "satisfy_hunger"}),
                 ("navigate_lateral", "navigate_frontier"),
                 "use a lateral step and then resume frontier motion",
             ),
             "escape_stagnation": SkillDefinition(
                 "escape_stagnation",
-                frozenset({"explore"}),
+                frozenset({"explore", "satisfy_thirst", "satisfy_hunger"}),
                 ("reorient_escape", "navigate_escape", "navigate_frontier"),
                 "rotate the body toward a better frontier, escape, then resume exploration",
             ),
