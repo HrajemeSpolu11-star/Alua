@@ -205,3 +205,45 @@ CI odhalilo, že nová evidence-driven kontrola známého, ale nejistého objekt
 ## 2026-10-06 – rozhodování konkrétní rukou
 
 Po zavedení autoritativní morfologie ve Worldu byla ExplorationPolicy rozšířena o bezpečné čtení `body_schema`. Pro nedestruktivní touch vybere přítomnou, touch-capable a volnou ruku. Test pokrývá výchozí pravou ruku i přepnutí na levou při obsazené pravé. Fyzický výsledek se dál učí pouze z budoucí observation.
+
+
+## 2026-10-08 – Cognitive Core V5 – kompletní implementační návaznost
+
+Důvod změny: field chování ukázalo, že V2/V3 uměly lokálně detekovat stagnaci a přepínat manévr, ale agent neměl dostatečně explicitní paměť vlastní cesty a návratovou strategii. Ve slepé větvi proto mohl stále lokálně přeplánovávat bez skutečného „vrať se po cestě, kterou jsem právě prošel“.
+
+Implementace byla provedena po vrstvách:
+
+1. **Persistence** – schema v5, automatický pre-v5 backup a namespaced `cognitive_records`.
+2. **Pozornost** – salience, novelty, surprise a uncertainty bez vytváření World truth.
+3. **Object permanence** – bounded tracky opaque appearances i po krátkém zmizení.
+4. **Spatial memory** – route stack, heading, dead-end evidence a remembered-route backtracking.
+5. **Relative odometry** – interní X/Z pouze z vlastních ověřených pohybů, s uncertainty.
+6. **Prediction** – context+action -> expected progress/success.
+7. **Risk** – kontextový risk z failure, slip, low progress a damage.
+8. **Self model** – empirická úspěšnost a effort vlastních capabilities.
+9. **Causal learning** – interventional hypotheses z vlastních actions a budoucích bodily/motor outcomes.
+10. **Metacognition** – rozlišení stagnation, loop, uncertainty a model prediction error.
+11. **Drives** – safety, homeostasis, curiosity, frustration a exploration.
+12. **Active experiments** – nízkorizikové informační experimenty přes existující goal/action pipeline.
+13. **Prospective memory** – persistentní budoucí záměry.
+14. **Missions** – přerušitelné long-horizon cíle s fresh-perception replan po každé akci.
+15. **Scene + temporal model** – multisensory context a recurrence evidence.
+16. **Concept formation** – abstrakce pouze ze společných evidence-backed affordances.
+17. **Strategy transfer** – slabý meta-learning prior, který nikdy nepřebíjí fresh sensory evidence.
+18. **Consolidation** – trajectory summaries, confidence decay a concept formation.
+19. **Social hooks** – testimony/trust/peer behavior pouze při explicitním social sensory kanálu.
+20. **Runtime integration** – CognitiveCore vložen mezi perception/world model a goal arbitration; future outcomes aktualizují prediction/risk/self/causal/strategy/spatial modely.
+21. **Planner/policy integration** – přidány `spatial_backtrack` a `deliberate_navigation`.
+22. **Explainability** – decision rationale dostává `cognitive_state`.
+23. **CLI** – přidán read-only `alua cognition-status`.
+24. **Regression testy** – přidány nové testy a zachovány všechny staré invarianty.
+25. **CI incident** – aktivní experiment původně vytvořil nový goal key `experiment:touch:...`; existující runtime testy správně zachytily fragmentaci evidence. Opravena implementace na kanonický `inspect:<appearance>`, testy nebyly oslabeny.
+26. **Dokumentace** – aktualizovány všechny autoritativní projektové texty a vytvořen samostatný kompletní auditní deník.
+
+Nejpodrobnější kroková evidence včetně migration, runtime lifecycle, testů, CI incidentu, deploymentu, rollbacku a Definition of Done:
+`docs/COGNITIVE_CORE_V5_IMPLEMENTATION_LOG.md`.
+
+Architektonický popis:
+`docs/COGNITIVE_CORE_V5.md`.
+
+Důležité: CI green neznamená field acceptance. V5 musí ještě v živém AluaWorld potvrdit skutečný návrat ze slepé větve, stabilitu dlouhého běhu a přijatelné CPU/RAM/DB chování.
