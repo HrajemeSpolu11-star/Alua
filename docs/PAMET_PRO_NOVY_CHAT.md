@@ -1,5 +1,29 @@
 # Paměť projektu Alua AI pro nový chat
 
+## MEZIREPO AUDIT – 2026-10-08 (současný stav)
+
+Související autoritativní audit všech tří součástí je v
+[`AluaWorld/docs/TRI_REPO_AUDIT_2026-10-08.md`](https://github.com/HrajemeSpolu11-star/AluaWorld/blob/main/docs/TRI_REPO_AUDIT_2026-10-08.md).
+Kontrolovaná rozhraní: Alua interní Cognitive Core V5 + SQLite v5,
+Agent/Bridge/World síťové `schema_version=1`,
+smysly body_schema/inventory/vision/hearing/motor a původní fyzický
+`source_sequence`. Bridge poskytuje bounded vjemy, World skutečné
+motor outcomes, AI teprve z nich vytváří beliefs a kognitivní modely.
+
+AluaWorld zavádí šest odlišně strukturovaných stromů (dub, borovice,
+bříza, vrba, jeřáb, mohutný veterán) s odlišnou fyzikou druhového
+dřeva a bez restartu uložené mapy. Změny v Worldu **automaticky
+neprokazují učení AI**. Než označíme Cognitive V5 za funkční,
+vyžadujeme živé `cognition-status`, `evaluate` a `benchmark` s
+resolved motor outcomes, backtracking a fyzickou interakci
+`pickup→consume` a `drink`.
+
+Stále nehotové: skutečný `social` kanál pro jiné tělo, doménové
+`contain/pour` v Worldu a dlouhodobě potvrzované doručení všech
+motorických událostí v Bridge. Nezavádět world-truth do AI.
+Toto je dokumentační synchronizace, nikoli změna AI runtime.
+
+
 ## AKTUÁLNÍ HANDOFF PRO NOVÝ CHAT – 2026-10-08
 
 ### Úplný krokový postup V5
