@@ -113,20 +113,28 @@ class EgocentricWorldModel:
         # Missing/stale body evidence must never imply a passable obstacle.
         channels = frame.persistent.get("channels")
         locomotion = channels.get("locomotion") if isinstance(channels, dict) else None
+        vitals = channels.get("vitals") if isinstance(channels, dict) else None
         needed = (
             "grounded_signal", "step_up_signal",
             "front_head_blocked_signal", "overhead_blocked_signal",
         )
-        if isinstance(locomotion, dict) and all(
-            isinstance(locomotion.get(key), (int, float))
-            and not isinstance(locomotion.get(key), bool)
-            for key in needed
+        stamina = vitals.get("stamina_fraction") if isinstance(vitals, dict) else None
+        if (
+            isinstance(locomotion, dict)
+            and isinstance(stamina, (int, float))
+            and not isinstance(stamina, bool)
+            and all(
+                isinstance(locomotion.get(key), (int, float))
+                and not isinstance(locomotion.get(key), bool)
+                for key in needed
+            )
         ):
             self._front_step_traversable = (
                 locomotion["grounded_signal"] >= 0.5
                 and locomotion["step_up_signal"] >= 0.5
                 and locomotion["front_head_blocked_signal"] < 0.5
                 and locomotion["overhead_blocked_signal"] < 0.5
+                and stamina >= 0.14  # World vault stamina minimum
             )
         else:
             self._front_step_traversable = False
