@@ -209,7 +209,13 @@ class ExplorationPolicy:
                 rationale={**common, "policy": "embodied_climb"},
             )
 
-        if float(signals.get("step_up_signal", 0.0)) >= 0.5:
+        if (
+            float(signals.get("step_up_signal", 0.0)) >= 0.5
+            and float(signals.get("grounded_signal", 0.0)) >= 0.5
+            and float(signals.get("front_head_blocked_signal", 0.0)) < 0.5
+            and float(signals.get("overhead_blocked_signal", 0.0)) < 0.5
+            and vitals.stamina >= 0.14
+        ):
             return ActionIntent(
                 action_type="move",
                 parameters={
