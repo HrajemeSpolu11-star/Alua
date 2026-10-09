@@ -259,6 +259,10 @@ class SpatialMemory:
 
     @staticmethod
     def _dead_end_from_model(model: EgocentricWorldModel) -> bool:
+        # A blocked *vision* ray is not a dead end if the body's fresh
+        # locomotion sense confirms this is a vaultable one-node step.
+        if model.front_step_traversable():
+            return False
         front = model.sectors["front"]
         left = model.sectors["left"]
         right = model.sectors["right"]
