@@ -237,7 +237,11 @@ class ExecutiveTests(unittest.TestCase):
         intent = controller.choose(perception, goal, memory)
         self.assertEqual(intent.rationale["policy"], "embodied_vault")
         self.assertEqual(intent.parameters["mode"], "vault")
-        self.assertEqual(intent.rationale["plan_skill"], "bypass_obstacle")
+        # The voxel is still physically solid, but no longer classified
+        # as a navigation dead end; the local controller performs vault.
+        self.assertEqual(intent.rationale["plan_skill"], "explore_frontier")
+        self.assertFalse(controller.world_model.front_is_blocked())
+        self.assertTrue(controller.world_model.front_step_traversable())
         self.assertGreaterEqual(intent.parameters["duration_s"], .6)
 
     def test_no_vault_without_current_bodily_step_evidence(self) -> None:
