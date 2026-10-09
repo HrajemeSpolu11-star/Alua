@@ -1,5 +1,10 @@
 # Paměť projektu Alua AI pro nový chat
 
+## 2026-10-09 – HANDOFF: JEDNA KOSTKA SE NESMÍ KLASIFIKOVAT JAKO SLEPÁ ULIČKA
+
+Uživatel požaduje, aby autonomní Alua **jednu kostku nevnímala jako neprůchodnou překážku**. V aktuálním Alua Python `world_model.py` byl čerstvý skutečný tělesný vjem `locomotion.step_up_signal=1` ignorován při hodnocení `front_is_blocked` a prostorová paměť četla raw vision `blocked_probability`. Nový patch sjednocuje klasifikaci: vypadá jako zeď, ale je-li podle reálné propriocepce, step, headroom a stamina (≥0.14) bezpečně vaultable, jde pro plánování o **průchodnou trasu**, pro fyziku zůstává solidní voxel. `SpatialMemory` nemůže takový jeden krok jen kvůli vision označit dead-end. `ExecutiveController` a `policy.terrain_intent` nevybírají `vault`, pokud není skutečně uskutečnitelný. Testy zahrnují vysokou stěnu, nízký strop, chybějící vjemy, malou energii a odhlášení stale step po otočení.
+Detaily `docs/INCIDENT_2026-10-09_ONE_BLOCK_IS_TRAVERSABLE.md`. Původní uložená mapa Worldu, Bridge a Alua SQLite se **NEMAŽOU**. Reálný Android test s motorickým `vertical_progress_signal` a skutečným výstupem stále musí proběhnout. Nedělat silná tvrzení na základě passing CI. Uživatel chce Termux povely postupně po jednom, kontrolovat screenshot před dalším krokem.
+
 ## AKTUÁLNÍ HANDOFF – NOVÝ BACKTRACK PING-PONG INCIDENT (2026-10-08, 12:02 CEST)
 
 - Po opravě need-search PR #15 agent ve světě **stále chodil v malém čtverci**. Nová relace těla `alua:1` (suffix `_e5`) měla v živém `benchmark --limit 500` **496 `spatial_backtrack` / 500 rozhodnutí**, 499 akcí `move`, 495 fyzických úspěchů z 499 (99,2 %), přitom 5 percepčních míst, 100 % předních snímků označených jako blocked, max 495 `move` za sebou. Starý evaluator **chybně PASS**. Nezaměňovat úspěšný motor krok s pokrokem v průzkumu!
