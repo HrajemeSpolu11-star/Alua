@@ -8,7 +8,6 @@ from .memory import WorkingMemory
 from .navigation import LocalNavigator
 from .perception import PerceptionFrame
 from .planning import BehaviorPlan, BoundedPlanner
-from .embodiment import locomotion_signals
 from .policy import ActionIntent, ExplorationPolicy
 from .world_model import EgocentricWorldModel
 
@@ -136,12 +135,9 @@ class ExecutiveController:
         # physical vault. Do not let model-only "front blocked" bypass routing
         # suppress that affordance during ordinary frontier or need search.
         # The self-critic stops repeating vault if actual motor outcomes fail.
-        locomotion = locomotion_signals(frame)
-        step_observed = (
-            float(locomotion.get("step_up_signal", 0.0)) >= 0.5
-            and float(locomotion.get("grounded_signal", 0.0)) >= 0.5
-            and float(locomotion.get("overhead_blocked_signal", 0.0)) < 0.5
-        )
+        # Use the SAME grounded/headroom/stamina evidence as route planning.
+        # Never select a vault on a wall the body cannot currently traverse.
+        step_observed = self.world_model.front_step_traversable()
         needs_search = (
             goal.kind in {"satisfy_thirst", "satisfy_hunger"}
             and isinstance(goal.reason, dict)

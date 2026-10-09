@@ -207,6 +207,8 @@ class PolicyTests(unittest.TestCase):
                 "locomotion": {
                     "grounded_signal": 1,
                     "step_up_signal": 1,
+                    "front_head_blocked_signal": 0,
+                    "overhead_blocked_signal": 0,
                     "gap_ahead_signal": 0,
                 },
             },
@@ -220,6 +222,35 @@ class PolicyTests(unittest.TestCase):
         )
         self.assertIsNotNone(action)
         self.assertEqual(action.parameters["mode"], "vault")
+
+    def test_unvaultable_wall_does_not_get_a_vault_command(self) -> None:
+        for kind, signals, stamina in (
+            ("high_wall", {"step_up_signal": 0., "front_head_blocked_signal": 1.}, .8),
+            ("ceiling", {"step_up_signal": 1., "overhead_blocked_signal": 1.}, .8),
+            ("low_stamina", {"step_up_signal": 1.}, .05),
+            ("not_grounded", {"step_up_signal": 1., "grounded_signal": 0.}, .8),
+        ):
+            with self.subTest(case=kind):
+                movement = {"grounded_signal": 1., "step_up_signal": 1.,
+                            "front_head_blocked_signal": 0.,
+                            "overhead_blocked_signal": 0., **signals}
+                current = build_frame({
+                    "schema_version": 1, "sequence": 30, "simulation_time": 30.,
+                    "channels": {
+                        "vision": {"rays": [
+                            {"distance_fraction": .06, "blocks_motion": True},
+                        ]},
+                        "vitals": {"stamina_fraction": stamina},
+                        "locomotion": movement,
+                    },
+                })
+                mem = WorkingMemory()
+                mem.add(current)
+                action = ExplorationPolicy().terrain_intent(
+                    current, GoalCandidate("explore:open", "explore", .5), mem,
+                )
+                self.assertNotEqual(action.parameters.get("mode") if action else None,
+                                    "vault")
 
     def test_verified_gap_landing_enables_jump(self) -> None:
         current = build_frame({

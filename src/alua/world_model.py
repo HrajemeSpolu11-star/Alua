@@ -86,17 +86,20 @@ class EgocentricWorldModel:
         }
         self._history: deque[WorldModelSnapshot] = deque(maxlen=history_capacity)
         self.sequence = 0
+        self._front_step_traversable = False
 
     def reset(self) -> None:
         for name in self.sectors:
             self.sectors[name] = SectorEvidence()
         self._history.clear()
         self.sequence = 0
+        self._front_step_traversable = False
 
     def invalidate_view(self) -> None:
         """Reset directional evidence after a successful head rotation."""
         for name in self.sectors:
             self.sectors[name] = SectorEvidence()
+        self._front_step_traversable = False
 
     def update(
         self,
@@ -104,6 +107,37 @@ class EgocentricWorldModel:
         novel_appearance_ids: set[str] | None = None,
     ) -> None:
         novel = novel_appearance_ids or set()
+        # Front vision still physically hits the voxel. However a ONE-node
+        # ledge is a traversable step when the embodied probe confirms solid
+        # support, a vaultable step and headroom. This is not hidden map data.
+        # Missing/stale body evidence must never imply a passable obstacle.
+        channels = frame.persistent.get("channels")
+        locomotion = channels.get("locomotion") if isinstance(channels, dict) else None
+        vitals = channels.get("vitals") if isinstance(channels, dict) else None
+        needed = (
+            "grounded_signal", "step_up_signal",
+            "front_head_blocked_signal", "overhead_blocked_signal",
+        )
+        stamina = vitals.get("stamina_fraction") if isinstance(vitals, dict) else None
+        if (
+            isinstance(locomotion, dict)
+            and isinstance(stamina, (int, float))
+            and not isinstance(stamina, bool)
+            and all(
+                isinstance(locomotion.get(key), (int, float))
+                and not isinstance(locomotion.get(key), bool)
+                for key in needed
+            )
+        ):
+            self._front_step_traversable = (
+                locomotion["grounded_signal"] >= 0.5
+                and locomotion["step_up_signal"] >= 0.5
+                and locomotion["front_head_blocked_signal"] < 0.5
+                and locomotion["overhead_blocked_signal"] < 0.5
+                and stamina >= 0.14  # World vault stamina minimum
+            )
+        else:
+            self._front_step_traversable = False
         touched: set[str] = set()
         for target in frame.targets:
             sector = RAY_SECTORS.get(target.ray_index)
@@ -117,7 +151,13 @@ class EgocentricWorldModel:
         self.sequence = frame.sequence
         self._history.append(self.snapshot())
 
+    def front_step_traversable(self) -> bool:
+        """Current body's forward one-node step can be physically vaulted."""
+        return self._front_step_traversable
+
     def front_is_blocked(self, threshold: float = 0.55) -> bool:
+        if self.front_step_traversable():
+            return False
         front = self.sectors["front"]
         return (
             front.confidence >= 0.20
@@ -129,6 +169,11 @@ class EgocentricWorldModel:
 
     def sector_score(self, name: str) -> float:
         evidence = self.sectors[name]
+        if name == "front" and self.front_step_traversable():
+            # A step requires extra effort but is NOT a dead end. Let
+            # navigation keep a forward route available rather than giving
+            # it a near-certain solid-wall penalty from the eye-level ray.
+            return 0.64 + 0.10 * evidence.novelty
         unknown_bonus = 0.18 * (1.0 - evidence.confidence)
         novelty_bonus = 0.24 * evidence.novelty
         blocked_penalty = 0.95 * evidence.blocked_probability
@@ -168,6 +213,7 @@ class EgocentricWorldModel:
         return {
             "sequence": self.sequence,
             "front_blocked": self.front_is_blocked(),
+            "front_step_traversable": self.front_step_traversable(),
             "preferred_sector": self.most_promising_horizontal_sector(),
             "horizontal_uncertainty": round(self.horizontal_uncertainty(), 4),
             "scores": {

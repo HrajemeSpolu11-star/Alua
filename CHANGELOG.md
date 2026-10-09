@@ -1,5 +1,13 @@
 # Přehled změn
 
+## 2026-10-09 – Jeden voxelový stupínek už není navigační slepá ulička
+
+- Opraven rozpor mezi vizuální kolizí `vision.blocks_motion=true` a současným tělesným důkazem `locomotion.step_up_signal=1`: jednoblokovou překonatelnou překážku AI dříve penalizovala jako neprůchodný sektor a prostorová paměť ji mohla označovat za dead-end.
+- `EgocentricWorldModel.front_step_traversable`: pouze čerstvý, kompletní tělesný vjem s oporou, volným prostorem nad hlavou a stamina ≥0.14 odlišuje *fyzicky překonatelný schod* od vysoké zdi. Přední sektor potom není považovaný za neprůchodný; skutečná fyzická kolize ale stále existuje.
+- `SpatialMemory._dead_end_from_model()` respektuje stejnou klasifikaci; `ExecutiveController` a `ExplorationPolicy` používají stejné fyzické podmínky při výběru `vault`, aby se vyhnuly nevykonatelnému skoku.
+- Regresní testy pro jednoprvkový krok, vyšší zeď, strop, vyčerpané tělo, chybějící/vypršené vjemy i výběr správného navigačního plánu. Detailní report `docs/INCIDENT_2026-10-09_ONE_BLOCK_IS_TRAVERSABLE.md`.
+- Netýká se mapy, Bridge schema ani SQLite paměti. **Skutečný výstup na kostku na telefonu dosud neověřen; CI není fyzická akceptace.**
+
 ## 2026-10-08 – využití skutečných motorických možností těla při výstupu na jednu kostku
 
 - Příčina pozorovaného selhání: World tělo nedokáže vyjít celou kostku pouhou chůzí (`stepheight=0.6`) a mozek vybíral `vault` pouze v omezené větvi; potřeby typu `satisfy_thirst:search` používaly jinou hierarchickou navigaci a tělesný vjem o překonatelném stupni mohl být ignorován.
